@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:csv="http://www.mulesoft.org/schema/mule/csv"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+          http://www.mulesoft.org/schema/mule/csv http://www.mulesoft.org/schema/mule/csv/current/mule-csv.xsd">
+
+	<csv:config name="Csv_Config" delimiter="|" recordSeparator="\n">
+		<csv:columns >
+			<csv:column columnName="name" type="TEXT" />
+			<csv:column columnName="age" type="INTEGER" />
+			<csv:column columnName="weight" type="NUMBER" />
+		</csv:columns>
+	</csv:config>
+	
+	<csv:config name="Csv_Config_No_Header" delimiter="|" recordSeparator="\n" withHeaderLine="false" commentStart="#" quoteChar="" escape="" >
+		<csv:columns >
+			<csv:column columnName="name" type="TEXT" />
+			<csv:column columnName="age" type="INTEGER" />
+			<csv:column columnName="weight" type="NUMBER" />
+		</csv:columns>
+	</csv:config>
+	
+	<flow name="csv-to-java">
+		<csv:parse config-ref="Csv_Config" input="#[payload]">
+			<non-repeatable-iterable />
+		</csv:parse>
+<!--
+ 		<set-payload value="#[payload[0]]" />
+ -->
+	</flow>
+
+	<flow name="csv-to-java-no-header">
+		<csv:parse config-ref="Csv_Config_No_Header" input="#[payload]">
+			<non-repeatable-iterable />
+		</csv:parse>
+	</flow>
+
+	<flow name="java-to-csv">
+		<csv:generate config-ref="Csv_Config" rows="#[payload]">
+			<non-repeatable-stream />
+		</csv:generate>
+	</flow>
+</mule>
