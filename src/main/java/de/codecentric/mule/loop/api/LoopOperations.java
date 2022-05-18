@@ -1,9 +1,17 @@
 package de.codecentric.mule.loop.api;
 
 import java.util.Collections;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.mule.runtime.api.lifecycle.Startable;
+import org.mule.runtime.api.lifecycle.Stoppable;
+import org.mule.runtime.api.scheduler.SchedulerConfig;
+import org.mule.runtime.api.scheduler.SchedulerService;
 import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.extension.api.annotation.param.Optional;
 import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
@@ -11,8 +19,26 @@ import org.mule.runtime.extension.api.runtime.operation.Result;
 import org.mule.runtime.extension.api.runtime.process.CompletionCallback;
 import org.mule.runtime.extension.api.runtime.route.Chain;
 
-public class LoopOperations {
-	private static Log logger = LogFactory.getLog(LoopOperations.class);
+public class LoopOperations implements Stoppable, Startable {
+	private static Logger logger = LoggerFactory.getLogger(LoopOperations.class);
+
+	@Inject
+	private SchedulerService schedulerService;
+
+	private ScheduledExecutorService scheduledExecutor;
+
+	@Override
+	public void start() {
+		SchedulerConfig config = SchedulerConfig.config().withMaxConcurrentTasks(10)
+				.withShutdownTimeout(1, TimeUnit.SECONDS).withPrefix("loop-module")
+				.withName("operations");
+		scheduledExecutor = schedulerService.customScheduler(config);
+	}
+
+	@Override
+	public void stop() {
+		scheduledExecutor.shutdown();
+	}
 
 	@SuppressWarnings("unchecked")
 	public void repeatUntilPayloadNotEmpty(Chain operations, CompletionCallback<Object, Object> callback) {
@@ -36,7 +62,7 @@ public class LoopOperations {
 		}
 		if (output instanceof String && ((String) output).trim().isEmpty()) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("output: \"" + output + "\"");
+				logger.debug("output: \"{}\"", output);
 			}
 			return true;
 		}
@@ -54,19 +80,35 @@ public class LoopOperations {
 			@DisplayName("start (inclusive)") @Optional(defaultValue = "0") int start, //
 			@DisplayName("end (exclusive)") int end, @Optional(defaultValue = "true") boolean counterAsPayload) {
 
-		if (counterAsPayload) {
-			forLoopWithCounter(operations, callback, start, end);
-		} else {
-			forLoopWithPayload(operations, callback, start, end, true, null);
+		if (start < end) {
+			if (counterAsPayload) {
+				new ForWithCounterRunner(operations, callback, start, end).run();
+			} else {
+				new ForWithPayloadRunner(operations, callback, start, end).run();
+			}
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	private void forLoopWithCounter(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) {
-		if (start < end) {
+	private class ForWithCounterRunner implements Runnable {
+		private Chain operations;
+		private CompletionCallback<Object, Object> callback;
+		private int start;
+		private int end;
+		
+		public ForWithCounterRunner(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) {
+			this.operations = operations;
+			this.callback = callback;
+			this.start = start;
+			this.end = end;
+		}
+		
+		@Override
+		@SuppressWarnings("unchecked")
+		public void run() {
 			operations.process(start, Collections.EMPTY_MAP, result -> {
 				if (start + 1 < end) {
-					forLoopWithCounter(operations, callback, start + 1, end);
+					start++;
+					scheduledExecutor.submit(this);
 				} else {
 					callback.success(result);
 				}
@@ -75,17 +117,33 @@ public class LoopOperations {
 			});
 		}
 	}
-
-	@SuppressWarnings("unchecked")
-	private void forLoopWithPayload(Chain operations, CompletionCallback<Object, Object> callback, int start, int end,
-			boolean first, Object payload) {
-
-		if (start < end) {
+	
+	private class ForWithPayloadRunner implements Runnable {
+		private Chain operations;
+		private CompletionCallback<Object, Object> callback;
+		private int start;
+		private int end;
+		private boolean first;
+		private Object payload;
+		
+		public ForWithPayloadRunner(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) {
+			this.operations = operations;
+			this.callback = callback;
+			this.start = start;
+			this.end = end;
+			first = true;
+		}
+		
+		@Override
+		@SuppressWarnings("unchecked")
+		public void run() {
 			if (first) {
 				operations.process(result -> {
-					
 					if (start + 1 < end) {
-						forLoopWithPayload(operations, callback, start + 1, end, false, result.getOutput());
+						start++;
+						payload = result.getOutput();
+						first = false;
+						scheduledExecutor.submit(this);
 					} else {
 						callback.success(result);
 					}
@@ -94,9 +152,10 @@ public class LoopOperations {
 				});
 			} else {
 				operations.process(payload, Collections.EMPTY_MAP, result -> {
-					
 					if (start + 1 < end) {
-						forLoopWithPayload(operations, callback, start + 1, end, false, result.getOutput());
+						start++;
+						payload = result.getOutput();
+						scheduledExecutor.submit(this);
 					} else {
 						callback.success(result);
 					}

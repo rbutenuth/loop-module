@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:loop="http://www.mulesoft.org/schema/mule/loop"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+      http://www.mulesoft.org/schema/mule/loop http://www.mulesoft.org/schema/mule/loop/current/mule-loop.xsd">
+
+	<flow name="loop-1000-counter">
+		<loop:for end="1000">
+			<logger level="DEBUG" message='#[payload]' category="loop-1000-counter" />
+			<set-payload value="foo"/>
+		</loop:for>
+	</flow>
+	
+	<flow name="loop-1000-payload">
+		<set-payload value="#[0]"/>
+		<loop:for end="1000" counterAsPayload="false">
+			<set-payload value="#[payload + 2]"/>
+		</loop:for>
+	</flow>
+	
+</mule>
