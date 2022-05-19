@@ -21,7 +21,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
@@ -30,7 +30,7 @@ The module is available on [Maven Central](https://mvnrepository.com/), so you d
 
 ## Repeat Until Payload Not Empty
 
-This loop executes the loop body at least once and repeats until the body returns a non empty payload. There is nothing to configure.
+This loop executes the loop body at least once and repeats until the body returns a non empty payload. There is nothing to configure. Empty are null, empty String, empty array, and empty map.
 
 Here an example which calls an HTTP end point with one query parameter until the GET request returns a non empty payload:
 

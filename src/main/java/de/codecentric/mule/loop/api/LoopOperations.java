@@ -21,17 +21,24 @@ public class LoopOperations {
 	private static Logger logger = LoggerFactory.getLogger(LoopOperations.class);
 
 	@SuppressWarnings("unchecked")
-	public void repeatUntilPayloadNotEmpty(Chain operations, CompletionCallback<Object, Object> callback) {
-		operations.process(result -> {
-
-			if (isEmpty(result)) {
-				repeatUntilPayloadNotEmpty(operations, callback);
-			} else {
-				callback.success(result);
-			}
-		}, (error, previous) -> {
-			callback.error(error);
-		});
+	public void repeatUntilPayloadNotEmpty(Chain operations, CompletionCallback<Object, Object> callback) throws InterruptedException {
+		AtomicBoolean continueLoop = new AtomicBoolean(true);
+		Semaphore sem = new Semaphore(0);
+		do {
+			operations.process(result -> {
+				if (isEmpty(result)) {
+					sem.release();
+				} else {
+					continueLoop.set(false);
+					callback.success(result);
+				}
+			}, (error, previous) -> {
+				callback.error(error);
+				continueLoop.set(false);
+				sem.release();
+			});
+			sem.acquire();
+		} while (continueLoop.get());
 	}
 
 	private boolean isEmpty(Result<?, ?> result) {

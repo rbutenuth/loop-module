@@ -17,7 +17,7 @@
 	<flow name="repeat-1000-iterations">
 		<java:new class="de.codecentric.mule.loop.BooleanProvider" constructor="BooleanProvider(int)" target="provider">
 			<java:args ><![CDATA[#[{
-	size: 10
+	size: 1000
 }]]]></java:args>
 		</java:new>
 		<loop:repeat-until-payload-not-empty>
@@ -47,7 +47,7 @@
 			</java:invoke>
 			<choice>
 				<when expression="#[payload]">
-					<logger level="INFO" message='in repeat loop' category="repeat-empty-by-null" />
+					<logger level="DEBUG" message='in repeat loop' category="repeat-empty-by-null" />
 					<set-payload value="#[null]"/>
 				</when>
 				<otherwise>
@@ -69,7 +69,7 @@
 			</java:invoke>
 			<choice>
 				<when expression="#[payload]">
-					<logger level="INFO" message='in repeat loop' category="repeat-empty-by-array" />
+					<logger level="DEBUG" message='in repeat loop' category="repeat-empty-by-array" />
 					<set-payload value="#[[]]"/>
 				</when>
 				<otherwise>
@@ -91,7 +91,7 @@
 			</java:invoke>
 			<choice>
 				<when expression="#[payload]">
-					<logger level="INFO" message='in repeat loop' category="repeat-empty-by-object" />
+					<logger level="DEBUG" message='in repeat loop' category="repeat-empty-by-object" />
 					<set-payload value="#[{}]"/>
 				</when>
 				<otherwise>
