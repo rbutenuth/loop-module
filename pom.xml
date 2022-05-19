@@ -42,7 +42,7 @@
 	</licenses>
 
 	<scm>
-		<connection>scm:git:https://github.com/rbutenuth/loop-module.git</connection>
+		<connection>scm:git:https://github.com:rbutenuth/loop-module.git</connection>
 		<tag>loop-module-1.0.0</tag>
 	</scm>
 
