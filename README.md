@@ -2,15 +2,16 @@
 
 ## Introduction
 
-This module adds two variant of loops to Mule 4 flows:
+This module adds three variant of loops to Mule 4 flows:
 
 1. A repeat until loop: This loops runs at least once and is repeated until the body produces a non empty payload.
 2. A for loop, counting from a start to an end value.
+3. A for-each loop, similar to the for-each available in Mule 4, but collecting the payloads.
 
 Caused by the way how scopes are implemented in the Mule SDK (asynchronous), it is possible to transfer variables 
 into the scope, but there is no way to transfer variables out of the scope. So any changes to variables within the
-loop are only visible in the the loop. There is one way to transfer data out of the loop: The payload after the 
-last iteration is the payload returned by the loop.
+loop are only visible within the the loop. The first two variants return the payload of the last iteration, the third
+a collection of the payloads of all iterations. 
 
 ## Maven Dependency
 
@@ -20,7 +21,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>0.1.0</version>
+	<version>1.0.0</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
@@ -77,5 +78,16 @@ set in front of the loop, followed by 41 `x` added within the loop:
 	<logger level="INFO" doc:name="payload" message="#[payload]" category="for"/>
 	<set-payload value='#[payload ++ "x"]' doc:name='payload ++ "x"' />
 </loop:for>
+```
+
+## For-Each
+
+The loop iterates over payload, or the optional collection given in the parameter `values`.
+Here an example to square all numbers of a collection:
+
+```
+<loop:for-each>
+	<set-payload value="#[payload * payload]"/>
+</loop:for-each>
 ```
 

@@ -6,18 +6,34 @@
       xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
       http://www.mulesoft.org/schema/mule/loop http://www.mulesoft.org/schema/mule/loop/current/mule-loop.xsd">
 
-	<flow name="loop-1000-counter">
-		<loop:for end="1000">
-			<logger level="DEBUG" message='#[payload]' category="loop-1000-counter" />
+	<flow name="empty-for">
+		<loop:for end="0">
 			<set-payload value="foo"/>
 		</loop:for>
 	</flow>
 	
+	<flow name="loop-1000-counter">
+		<logger level="INFO" message='before loop' category="loop-1000-counter" />
+		<loop:for end="1000">
+			<logger level="DEBUG" message='#[payload]' category="loop-1000-counter" />
+			<set-payload value="foo"/>
+		</loop:for>
+		<logger level="INFO" message='after loop' category="loop-1000-counter" />
+	</flow>
+	
 	<flow name="loop-1000-payload">
-		<set-payload value="#[0]"/>
+		<set-payload value="#[42]"/>
 		<loop:for end="1000" counterAsPayload="false">
+			<logger level="DEBUG" message='#[payload]' category="loop-1000-payload" />
 			<set-payload value="#[payload + 2]"/>
 		</loop:for>
+	</flow>
+	
+	<flow name="for-each">
+		<loop:for-each>
+			<logger level="DEBUG" message='#[payload]' category="for-each" />
+			<set-payload value="#[payload * payload]"/>
+		</loop:for-each>
 	</flow>
 	
 </mule>

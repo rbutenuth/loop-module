@@ -1,44 +1,22 @@
 package de.codecentric.mule.loop.api;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Semaphore;
 
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.mule.runtime.api.lifecycle.Startable;
-import org.mule.runtime.api.lifecycle.Stoppable;
-import org.mule.runtime.api.scheduler.SchedulerConfig;
-import org.mule.runtime.api.scheduler.SchedulerService;
 import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.extension.api.annotation.param.Optional;
 import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
 import org.mule.runtime.extension.api.runtime.operation.Result;
 import org.mule.runtime.extension.api.runtime.process.CompletionCallback;
 import org.mule.runtime.extension.api.runtime.route.Chain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class LoopOperations implements Stoppable, Startable {
+public class LoopOperations {
 	private static Logger logger = LoggerFactory.getLogger(LoopOperations.class);
-
-	@Inject
-	private SchedulerService schedulerService;
-
-	private ScheduledExecutorService scheduledExecutor;
-
-	@Override
-	public void start() {
-		SchedulerConfig config = SchedulerConfig.config().withMaxConcurrentTasks(10)
-				.withShutdownTimeout(1, TimeUnit.SECONDS).withPrefix("loop-module")
-				.withName("operations");
-		scheduledExecutor = schedulerService.customScheduler(config);
-	}
-
-	@Override
-	public void stop() {
-		scheduledExecutor.shutdown();
-	}
 
 	@SuppressWarnings("unchecked")
 	public void repeatUntilPayloadNotEmpty(Chain operations, CompletionCallback<Object, Object> callback) {
@@ -78,91 +56,83 @@ public class LoopOperations implements Stoppable, Startable {
 	@Alias("for")
 	public void forLoop(Chain operations, CompletionCallback<Object, Object> callback, //
 			@DisplayName("start (inclusive)") @Optional(defaultValue = "0") int start, //
-			@DisplayName("end (exclusive)") int end, @Optional(defaultValue = "true") boolean counterAsPayload) {
+			@DisplayName("end (exclusive)") int end, @Optional(defaultValue = "true") boolean counterAsPayload) throws InterruptedException {
 
 		if (start < end) {
 			if (counterAsPayload) {
-				new ForWithCounterRunner(operations, callback, start, end).run();
+				forWithCounter(operations, callback, start, end);
 			} else {
-				new ForWithPayloadRunner(operations, callback, start, end).run();
+				forWithPayload(operations, callback, start, end);
 			}
+		} else {
+			callback.success(Result.<Object, Object>builder().build()); 
 		}
 	}
 
-	private class ForWithCounterRunner implements Runnable {
-		private Chain operations;
-		private CompletionCallback<Object, Object> callback;
-		private int start;
-		private int end;
-		
-		public ForWithCounterRunner(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) {
-			this.operations = operations;
-			this.callback = callback;
-			this.start = start;
-			this.end = end;
-		}
-		
-		@Override
-		@SuppressWarnings("unchecked")
-		public void run() {
-			operations.process(start, Collections.EMPTY_MAP, result -> {
-				if (start + 1 < end) {
-					start++;
-					scheduledExecutor.submit(this);
-				} else {
+	@SuppressWarnings("unchecked")
+	private void forWithCounter(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) throws InterruptedException {
+		Semaphore sem = new Semaphore(0);
+		for (int i = start; i < end; i++) {
+			final int counter = i;
+			operations.process(counter, Collections.EMPTY_MAP, result -> {
+				if (counter + 1 == end) {
 					callback.success(result);
 				}
+				sem.release();
 			}, (error, previous) -> {
 				callback.error(error);
 			});
+			sem.acquire();
 		}
 	}
 	
-	private class ForWithPayloadRunner implements Runnable {
-		private Chain operations;
-		private CompletionCallback<Object, Object> callback;
-		private int start;
-		private int end;
-		private boolean first;
-		private Object payload;
+	@SuppressWarnings("unchecked")
+	private void forWithPayload(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) throws InterruptedException {
+		ArrayBlockingQueue<Object> queue = new ArrayBlockingQueue<>(1);
 		
-		public ForWithPayloadRunner(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) {
-			this.operations = operations;
-			this.callback = callback;
-			this.start = start;
-			this.end = end;
-			first = true;
-		}
-		
-		@Override
-		@SuppressWarnings("unchecked")
-		public void run() {
-			if (first) {
+		Object payload = null;
+		for (int i = start; i < end; i++) {
+			final int counter = i;
+			if (counter == start) {
+				// In first iteration, process with the payload present when scope starts:
 				operations.process(result -> {
-					if (start + 1 < end) {
-						start++;
-						payload = result.getOutput();
-						first = false;
-						scheduledExecutor.submit(this);
-					} else {
+					if (counter + 1 == end) {
 						callback.success(result);
 					}
+					queue.offer(result.getOutput());
 				}, (error, previous) -> {
 					callback.error(error);
 				});
 			} else {
+				// For all other iterations, use the payload we have transported through the queue:
 				operations.process(payload, Collections.EMPTY_MAP, result -> {
-					if (start + 1 < end) {
-						start++;
-						payload = result.getOutput();
-						scheduledExecutor.submit(this);
-					} else {
+					if (counter + 1 == end) {
 						callback.success(result);
 					}
+					queue.offer(result.getOutput());
 				}, (error, previous) -> {
 					callback.error(error);
 				});
 			}
+			payload = queue.take();
 		}
 	}
+	
+	@Alias("for-each")
+	public void forLoop(Chain operations, CompletionCallback<Object, Object> callback, //
+		@Optional(defaultValue = "#[payload]") Collection<Object> values) throws InterruptedException {
+		Collection<Object> resultCollection = new ArrayList<>(values.size());
+		ArrayBlockingQueue<Object> queue = new ArrayBlockingQueue<>(1);
+		
+		for (Object value: values) {
+				operations.process(value, Collections.EMPTY_MAP, result -> {
+					queue.offer(result.getOutput());
+				}, (error, previous) -> {
+					callback.error(error);
+				});
+			resultCollection.add(queue.take());
+		}
+		callback.success(Result.<Object, Object>builder().output(resultCollection).build()); 
+	}
+
 }
