@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 import org.mule.functional.junit4.MuleArtifactFunctionalTestCase;
@@ -30,6 +31,31 @@ public class LoopModuleTests  extends MuleArtifactFunctionalTestCase {
 		Event event = flowRunner("repeat-1000-iterations").run();
 		String payload = (String) event.getMessage().getPayload().getValue();
 		assertEquals("done", payload);
+	}
+
+	@Test
+	public void repeatUntilEmptyByNull() throws Exception {
+		Event event = flowRunner("repeat-empty-by-null").run();
+		String payload = (String) event.getMessage().getPayload().getValue();
+		assertEquals("done", payload);
+	}
+
+	@Test
+	public void repeatUntilEmptyByEmptyArray() throws Exception {
+		Event event = flowRunner("repeat-empty-by-array").run();
+		@SuppressWarnings("unchecked")
+		List<Integer> payload = (List<Integer>) event.getMessage().getPayload().getValue();
+		assertEquals(1, payload.size());
+		assertEquals(Integer.valueOf(42), payload.get(0));
+	}
+
+	@Test
+	public void repeatUntilEmptyByEmptyObject() throws Exception {
+		Event event = flowRunner("repeat-empty-by-object").run();
+		@SuppressWarnings("unchecked")
+		Map<String, String> payload = (Map<String, String>) event.getMessage().getPayload().getValue();
+		assertEquals(1, payload.size());
+		assertEquals("bar", payload.get("foo"));
 	}
 
 	@Test

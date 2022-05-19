@@ -3,10 +3,11 @@ package de.codecentric.mule.loop.api;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.Optional;
 
 import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
@@ -40,13 +41,15 @@ public class LoopOperations {
 			return true;
 		}
 		if (output instanceof String && ((String) output).trim().isEmpty()) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("output: \"{}\"", output);
-			}
+			logger.debug("output empty string");
 			return true;
 		}
-		if (result.getByteLength().orElse(-1) == 0) {
-			logger.debug("output length is 0");
+		if (output instanceof Collection && ((Collection<?>) output).isEmpty()) {
+			logger.debug("output is empty collection");
+			return true;
+		}
+		if (output instanceof Map && ((Map<?, ?>)output).isEmpty()) {
+			logger.debug("output is empty map");
 			return true;
 		}
 		logger.debug("output is not empty");
