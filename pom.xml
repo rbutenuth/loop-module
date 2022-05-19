@@ -43,8 +43,6 @@
 
 	<scm>
 		<connection>scm:git:https://github.com/rbutenuth/loop-module.git</connection>
-		<developerConnection>scm:git:https://github.com/rbutenuth/loop-module.git</developerConnection>
-		<url>https://github.com/rbutenuth/loop-module</url>
 		<tag>loop-module-1.0.0</tag>
 	</scm>
 
