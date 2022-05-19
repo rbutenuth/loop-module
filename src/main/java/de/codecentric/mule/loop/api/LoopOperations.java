@@ -5,9 +5,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Optional;
 
 import org.mule.runtime.extension.api.annotation.Alias;
-import org.mule.runtime.extension.api.annotation.param.Optional;
 import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
 import org.mule.runtime.extension.api.runtime.operation.Result;
 import org.mule.runtime.extension.api.runtime.process.CompletionCallback;
@@ -55,8 +56,8 @@ public class LoopOperations {
 
 	@Alias("for")
 	public void forLoop(Chain operations, CompletionCallback<Object, Object> callback, //
-			@DisplayName("start (inclusive)") @Optional(defaultValue = "0") int start, //
-			@DisplayName("end (exclusive)") int end, @Optional(defaultValue = "true") boolean counterAsPayload) throws InterruptedException {
+			@DisplayName("start (inclusive)") @org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "0") int start, //
+			@DisplayName("end (exclusive)") int end, @org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "true") boolean counterAsPayload) throws InterruptedException {
 
 		if (start < end) {
 			if (counterAsPayload) {
@@ -71,8 +72,9 @@ public class LoopOperations {
 
 	@SuppressWarnings("unchecked")
 	private void forWithCounter(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) throws InterruptedException {
+		AtomicBoolean continueLoop = new AtomicBoolean(true);
 		Semaphore sem = new Semaphore(0);
-		for (int i = start; i < end; i++) {
+		for (int i = start; i < end && continueLoop.get(); i++) {
 			final int counter = i;
 			operations.process(counter, Collections.EMPTY_MAP, result -> {
 				if (counter + 1 == end) {
@@ -81,6 +83,8 @@ public class LoopOperations {
 				sem.release();
 			}, (error, previous) -> {
 				callback.error(error);
+				continueLoop.set(false);
+				sem.release();
 			});
 			sem.acquire();
 		}
@@ -88,10 +92,11 @@ public class LoopOperations {
 	
 	@SuppressWarnings("unchecked")
 	private void forWithPayload(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) throws InterruptedException {
-		ArrayBlockingQueue<Object> queue = new ArrayBlockingQueue<>(1);
+		AtomicBoolean continueLoop = new AtomicBoolean(true);
+		ArrayBlockingQueue<Optional<Object>> queue = new ArrayBlockingQueue<>(1);
 		
 		Object payload = null;
-		for (int i = start; i < end; i++) {
+		for (int i = start; i < end && continueLoop.get(); i++) {
 			final int counter = i;
 			if (counter == start) {
 				// In first iteration, process with the payload present when scope starts:
@@ -99,9 +104,12 @@ public class LoopOperations {
 					if (counter + 1 == end) {
 						callback.success(result);
 					}
-					queue.offer(result.getOutput());
+					queue.offer(Optional.ofNullable(result.getOutput()));
 				}, (error, previous) -> {
+					logger.info("xxx fail in first iteration");
 					callback.error(error);
+					continueLoop.set(false);
+					queue.offer(Optional.empty());
 				});
 			} else {
 				// For all other iterations, use the payload we have transported through the queue:
@@ -109,30 +117,38 @@ public class LoopOperations {
 					if (counter + 1 == end) {
 						callback.success(result);
 					}
-					queue.offer(result.getOutput());
+					queue.offer(Optional.ofNullable(result.getOutput()));
 				}, (error, previous) -> {
+					logger.info("xxx fail in other iteration");
 					callback.error(error);
+					continueLoop.set(false);
+					queue.offer(Optional.empty());
 				});
 			}
-			payload = queue.take();
+			payload = queue.take().orElse(null);
 		}
 	}
 	
 	@Alias("for-each")
 	public void forLoop(Chain operations, CompletionCallback<Object, Object> callback, //
-		@Optional(defaultValue = "#[payload]") Collection<Object> values) throws InterruptedException {
+		@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values) throws InterruptedException {
+		AtomicBoolean continueLoop = new AtomicBoolean(true);
 		Collection<Object> resultCollection = new ArrayList<>(values.size());
-		ArrayBlockingQueue<Object> queue = new ArrayBlockingQueue<>(1);
+		ArrayBlockingQueue<Optional<Object>> queue = new ArrayBlockingQueue<>(1);
 		
 		for (Object value: values) {
-				operations.process(value, Collections.EMPTY_MAP, result -> {
-					queue.offer(result.getOutput());
-				}, (error, previous) -> {
-					callback.error(error);
-				});
-			resultCollection.add(queue.take());
+			if (!continueLoop.get()) {
+				break;
+			}
+			operations.process(value, Collections.EMPTY_MAP, result -> {
+				queue.offer(Optional.ofNullable(result.getOutput()));
+			}, (error, previous) -> {
+				callback.error(error);
+				continueLoop.set(false);
+				queue.offer(Optional.empty());
+			});
+			resultCollection.add(queue.take().orElse(null));
 		}
 		callback.success(Result.<Object, Object>builder().output(resultCollection).build()); 
 	}
-
 }

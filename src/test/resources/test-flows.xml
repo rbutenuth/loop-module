@@ -2,9 +2,45 @@
 
 <mule xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:java="http://www.mulesoft.org/schema/mule/java"
       xmlns:loop="http://www.mulesoft.org/schema/mule/loop"
       xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+      http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
       http://www.mulesoft.org/schema/mule/loop http://www.mulesoft.org/schema/mule/loop/current/mule-loop.xsd">
+
+	<flow name="payload-immediately-not-empty">
+		<loop:repeat-until-payload-not-empty>
+			<set-payload value="foo"/>
+		</loop:repeat-until-payload-not-empty>
+	</flow>
+
+	<flow name="repeat-1000-iterations">
+		<java:new class="de.codecentric.mule.loop.BooleanProvider" constructor="BooleanProvider(int)" target="provider">
+			<java:args ><![CDATA[#[{
+	size: 1000
+}]]]></java:args>
+		</java:new>
+		<loop:repeat-until-payload-not-empty>
+			<java:invoke instance="#[vars.provider]" class="de.codecentric.mule.loop.BooleanProvider" method="fetch()">
+				<java:args ><![CDATA[#[{}]]]></java:args>
+			</java:invoke>
+			<choice>
+				<when expression="#[payload]">
+					<logger level="INFO" message='in repeat loop' category="repeat-until-payload-not-empty" />
+					<set-payload value=""/>
+				</when>
+				<otherwise>
+					<set-payload value="done"/>
+				</otherwise>
+			</choice>
+		</loop:repeat-until-payload-not-empty>
+	</flow>
+
+	<flow name="repeat-error">
+		<loop:repeat-until-payload-not-empty>
+			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="nothing to repeat..." />
+		</loop:repeat-until-payload-not-empty>
+	</flow>
 
 	<flow name="empty-for">
 		<loop:for end="0">
@@ -15,7 +51,6 @@
 	<flow name="loop-1000-counter">
 		<logger level="INFO" message='before loop' category="loop-1000-counter" />
 		<loop:for end="1000">
-			<logger level="DEBUG" message='#[payload]' category="loop-1000-counter" />
 			<set-payload value="foo"/>
 		</loop:for>
 		<logger level="INFO" message='after loop' category="loop-1000-counter" />
@@ -24,15 +59,68 @@
 	<flow name="loop-1000-payload">
 		<set-payload value="#[42]"/>
 		<loop:for end="1000" counterAsPayload="false">
-			<logger level="DEBUG" message='#[payload]' category="loop-1000-payload" />
 			<set-payload value="#[payload + 2]"/>
 		</loop:for>
 	</flow>
 	
+	<flow name="loop-1-payload">
+		<set-payload value="#[42]"/>
+		<loop:for end="1" counterAsPayload="false">
+			<set-payload value="#[payload + 2]"/>
+		</loop:for>
+	</flow>
+	
+	<flow name="loop-counter-error-in-first-iteration">
+		<loop:for end="1000">
+			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="nothing to describe..." />
+		</loop:for>
+	</flow>
+
+	<flow name="loop-counter-error-in-second-iteration">
+		<loop:for end="1000">
+			<choice>
+				<when expression="#[payload == 1]">
+					<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="#['counter: ' ++ payload]" />
+				</when>
+				<otherwise >
+					<logger level="DEBUG" message='#[payload]' category="loop-counter-error-in-second-iteration" />
+				</otherwise>
+			</choice>
+		</loop:for>
+	</flow>
+
+	<flow name="loop-error-in-first-iteration">
+		<loop:for end="1000" counterAsPayload="false">
+			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="nothing to describe..." />
+		</loop:for>
+	</flow>
+
+	<flow name="loop-error-in-second-iteration">
+		<set-payload value="#[0]" />
+		<loop:for end="1000" counterAsPayload="false">
+			<choice>
+				<when expression="#[payload == 1]">
+					<logger level="INFO" message='xxx raise' category="loop-error-in-second-iteration" />
+					<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="nothing to describe..." />
+				</when>
+				<otherwise >
+					<logger level="INFO" message='#["xxx increase counter, counter: " ++ (payload as String)]' category="loop-error-in-second-iteration" />
+					<set-payload value="#[payload + 1]" />
+				</otherwise>
+			</choice>
+		</loop:for>
+	</flow>
+
 	<flow name="for-each">
 		<loop:for-each>
 			<logger level="DEBUG" message='#[payload]' category="for-each" />
 			<set-payload value="#[payload * payload]"/>
+		</loop:for-each>
+	</flow>
+	
+	<flow name="for-each-with-error">
+		<loop:for-each>
+			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="nothing to describe..." />
 		</loop:for-each>
 	</flow>
 	
