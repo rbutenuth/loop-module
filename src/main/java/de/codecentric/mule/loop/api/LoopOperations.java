@@ -26,12 +26,11 @@ public class LoopOperations {
 		Semaphore sem = new Semaphore(0);
 		do {
 			operations.process(result -> {
-				if (isEmpty(result)) {
-					sem.release();
-				} else {
+				if (!isEmpty(result)) {
 					continueLoop.set(false);
 					callback.success(result);
 				}
+				sem.release();
 			}, (error, previous) -> {
 				callback.error(error);
 				continueLoop.set(false);
