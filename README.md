@@ -91,3 +91,19 @@ Here an example to square all numbers of a collection:
 </loop:for-each>
 ```
 
+
+## Release notes
+
+### 1.0.2 2022-10-08 
+
+- Fixed deadlock in repeat-until-payload-not-empty
+
+### 1.0.1 2022-05-19
+
+- Rewrite from recursion to iteration to allow longer loops without stack overflow
+- Added for-each with result collection
+
+### 0.1.0 2021-02-20
+
+- Initial release
+
