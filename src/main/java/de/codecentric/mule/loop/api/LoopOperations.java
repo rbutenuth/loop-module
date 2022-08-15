@@ -10,7 +10,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.mule.runtime.extension.api.annotation.Alias;
+import org.mule.runtime.extension.api.annotation.error.Throws;
 import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
+import org.mule.runtime.extension.api.exception.ModuleException;
 import org.mule.runtime.extension.api.runtime.operation.Result;
 import org.mule.runtime.extension.api.runtime.process.CompletionCallback;
 import org.mule.runtime.extension.api.runtime.route.Chain;
@@ -65,6 +67,7 @@ public class LoopOperations {
 
 	@SuppressWarnings("unchecked")
 	@Alias("while")
+	@Throws(value = OperationErrorTypeProvider.class)
 	public void whileLoop(Chain operations, CompletionCallback<Object, Object> callback,
 			 boolean condition, Object initialPayload, boolean collectResults) throws InterruptedException {
 		ArrayBlockingQueue<Entry> queue = new ArrayBlockingQueue<>(1);
@@ -75,8 +78,13 @@ public class LoopOperations {
 		while (entry.condition) {
 			Object nextPayload = firstIteration ? initialPayload : entry.payload;
 			operations.process(nextPayload, Collections.EMPTY_MAP, result -> {
-				// TODO: Throw error, when not map
-				Map<String, Object> payload = (Map<String, Object>)result.getOutput();
+				Object rawPayload = result.getOutput(); 
+				if (!(rawPayload instanceof Map)) {
+					throw new ModuleException(
+							"Payload should be Map, but is: " + (rawPayload == null ? "null" : rawPayload.getClass()),
+							LoopError.PAYLOAD_IS_NOT_MAP);
+				}
+				Map<String, Object> payload = (Map<String, Object>)rawPayload;
 				if (collectResults) {
 					resultCollection.add(payload.get("addToCollection"));
 				}
