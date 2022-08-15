@@ -3,10 +3,10 @@ package de.codecentric.mule.loop.api;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.mule.runtime.extension.api.annotation.Alias;
@@ -21,27 +21,27 @@ public class LoopOperations {
 	private static Logger logger = LoggerFactory.getLogger(LoopOperations.class);
 
 	@SuppressWarnings("unchecked")
-	public void repeatUntilPayloadNotEmpty(Chain operations, CompletionCallback<Object, Object> callback) throws InterruptedException {
-		AtomicBoolean continueLoop = new AtomicBoolean(true);
-		Semaphore sem = new Semaphore(0);
+	public void repeatUntilPayloadNotEmpty(Chain operations, CompletionCallback<Object, Object> callback)
+			throws InterruptedException {
+		ArrayBlockingQueue<Boolean> queue = new ArrayBlockingQueue<>(1);
+		boolean continueLoop;
 		do {
 			operations.process(result -> {
-				if (!isEmpty(result)) {
-					continueLoop.set(false);
+				if (!isEmpty(result.getOutput())) {
+					queue.offer(Boolean.FALSE);
 					callback.success(result);
+				} else {
+					queue.offer(Boolean.TRUE);
 				}
-				sem.release();
 			}, (error, previous) -> {
 				callback.error(error);
-				continueLoop.set(false);
-				sem.release();
+				queue.offer(Boolean.FALSE);
 			});
-			sem.acquire();
-		} while (continueLoop.get());
+			continueLoop = queue.take();
+		} while (continueLoop);
 	}
 
-	private boolean isEmpty(Result<?, ?> result) {
-		Object output = result.getOutput();
+	private boolean isEmpty(Object output) {
 		if (output == null) {
 			logger.debug("output is null");
 			return true;
@@ -54,7 +54,7 @@ public class LoopOperations {
 			logger.debug("output is empty collection");
 			return true;
 		}
-		if (output instanceof Map && ((Map<?, ?>)output).isEmpty()) {
+		if (output instanceof Map && ((Map<?, ?>) output).isEmpty()) {
 			logger.debug("output is empty map");
 			return true;
 		}
@@ -63,10 +63,74 @@ public class LoopOperations {
 		return false;
 	}
 
+	@SuppressWarnings("unchecked")
+	@Alias("while")
+	public void whileLoop(Chain operations, CompletionCallback<Object, Object> callback,
+			 boolean condition, Object initialPayload, boolean collectResults) throws InterruptedException {
+		ArrayBlockingQueue<Entry> queue = new ArrayBlockingQueue<>(1);
+		List<Object> resultCollection = collectResults ? new ArrayList<>() : null;
+		boolean firstIteration = true;
+		Entry entry = new Entry(condition, false, initialPayload);
+
+		while (entry.condition) {
+			Object nextPayload = firstIteration ? initialPayload : entry.payload;
+			operations.process(nextPayload, Collections.EMPTY_MAP, result -> {
+				// TODO: Throw error, when not map
+				Map<String, Object> payload = (Map<String, Object>)result.getOutput();
+				if (collectResults) {
+					resultCollection.add(payload.get("addToCollection"));
+				}
+				queue.offer(new Entry(evaluateCondition(payload.get("condition")), false, payload.get("nextPayload")));
+			}, (error, previous) -> {
+				callback.error(error);
+				// Make sure while() does not hang in case of error
+				queue.offer(new Entry(false, true, null));
+			});
+			entry = queue.take();
+			firstIteration = false;
+		}
+		if (!entry.error) {
+			if (collectResults) {
+				callback.success(Result.<Object, Object>builder().output(resultCollection).build());
+			} else {
+				callback.success(Result.<Object, Object>builder().output(entry.payload).build());
+			}
+		}
+	}
+	
+	static class Entry {
+		private final boolean condition;
+		private final boolean error;
+		private final Object payload;
+
+		public Entry(boolean condition, boolean error, Object payload) {
+			this.condition = condition;
+			this.error = error;
+			this.payload = payload;
+		}
+	}
+
+	/**
+	 * @param condition Any object...
+	 * @return <code>null</code>: false, {@link Boolean}: value, otherwise:
+	 *         !{@link #isEmpty(Object)}
+	 */
+	boolean evaluateCondition(Object condition) {
+		if (condition == null) {
+			return false;
+		} else if (condition instanceof Boolean) {
+			return ((Boolean) condition).booleanValue();
+		} else {
+			return !isEmpty(condition);
+		}
+	}
+
 	@Alias("for")
 	public void forLoop(Chain operations, CompletionCallback<Object, Object> callback, //
 			@DisplayName("start (inclusive)") @org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "0") int start, //
-			@DisplayName("end (exclusive)") int end, @org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "true") boolean counterAsPayload) throws InterruptedException {
+			@DisplayName("end (exclusive)") int end,
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "true") boolean counterAsPayload)
+			throws InterruptedException {
 
 		if (start < end) {
 			if (counterAsPayload) {
@@ -75,35 +139,36 @@ public class LoopOperations {
 				forWithPayload(operations, callback, start, end);
 			}
 		} else {
-			callback.success(Result.<Object, Object>builder().build()); 
+			callback.success(Result.<Object, Object>builder().build());
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	private void forWithCounter(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) throws InterruptedException {
-		AtomicBoolean continueLoop = new AtomicBoolean(true);
-		Semaphore sem = new Semaphore(0);
-		for (int i = start; i < end && continueLoop.get(); i++) {
+	private void forWithCounter(Chain operations, CompletionCallback<Object, Object> callback, int start, int end)
+			throws InterruptedException {
+		ArrayBlockingQueue<Boolean> queue = new ArrayBlockingQueue<>(1);
+		boolean continueLoop = true;
+		for (int i = start; i < end && continueLoop; i++) {
 			final int counter = i;
 			operations.process(counter, Collections.EMPTY_MAP, result -> {
 				if (counter + 1 == end) {
 					callback.success(result);
 				}
-				sem.release();
+				queue.offer(Boolean.TRUE);
 			}, (error, previous) -> {
 				callback.error(error);
-				continueLoop.set(false);
-				sem.release();
+				queue.offer(Boolean.FALSE);
 			});
-			sem.acquire();
+			continueLoop = queue.take();
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	private void forWithPayload(Chain operations, CompletionCallback<Object, Object> callback, int start, int end) throws InterruptedException {
+	private void forWithPayload(Chain operations, CompletionCallback<Object, Object> callback, int start, int end)
+			throws InterruptedException {
 		AtomicBoolean continueLoop = new AtomicBoolean(true);
 		ArrayBlockingQueue<Optional<Object>> queue = new ArrayBlockingQueue<>(1);
-		
+
 		Object payload = null;
 		for (int i = start; i < end && continueLoop.get(); i++) {
 			final int counter = i;
@@ -115,20 +180,19 @@ public class LoopOperations {
 					}
 					queue.offer(Optional.ofNullable(result.getOutput()));
 				}, (error, previous) -> {
-					logger.info("xxx fail in first iteration");
 					callback.error(error);
 					continueLoop.set(false);
 					queue.offer(Optional.empty());
 				});
 			} else {
-				// For all other iterations, use the payload we have transported through the queue:
+				// For all other iterations, use the payload we have transported through the
+				// queue:
 				operations.process(payload, Collections.EMPTY_MAP, result -> {
 					if (counter + 1 == end) {
 						callback.success(result);
 					}
 					queue.offer(Optional.ofNullable(result.getOutput()));
 				}, (error, previous) -> {
-					logger.info("xxx fail in other iteration");
 					callback.error(error);
 					continueLoop.set(false);
 					queue.offer(Optional.empty());
@@ -137,27 +201,30 @@ public class LoopOperations {
 			payload = queue.take().orElse(null);
 		}
 	}
-	
+
 	@Alias("for-each")
 	public void forLoop(Chain operations, CompletionCallback<Object, Object> callback, //
-		@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values) throws InterruptedException {
-		AtomicBoolean continueLoop = new AtomicBoolean(true);
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values)
+			throws InterruptedException {
+		AtomicBoolean errorOccured = new AtomicBoolean(false);
 		Collection<Object> resultCollection = new ArrayList<>(values.size());
 		ArrayBlockingQueue<Optional<Object>> queue = new ArrayBlockingQueue<>(1);
-		
-		for (Object value: values) {
-			if (!continueLoop.get()) {
+
+		for (Object value : values) {
+			if (errorOccured.get()) {
 				break;
 			}
 			operations.process(value, Collections.EMPTY_MAP, result -> {
 				queue.offer(Optional.ofNullable(result.getOutput()));
 			}, (error, previous) -> {
 				callback.error(error);
-				continueLoop.set(false);
+				errorOccured.set(true);
 				queue.offer(Optional.empty());
 			});
 			resultCollection.add(queue.take().orElse(null));
 		}
-		callback.success(Result.<Object, Object>builder().output(resultCollection).build()); 
+		if (!errorOccured.get()) {
+			callback.success(Result.<Object, Object>builder().output(resultCollection).build());
+		}
 	}
 }
