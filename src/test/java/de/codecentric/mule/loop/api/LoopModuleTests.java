@@ -12,7 +12,6 @@ import java.util.Map;
 import org.junit.Test;
 import org.mule.functional.junit4.MuleArtifactFunctionalTestCase;
 import org.mule.runtime.api.event.Event;
-import org.mule.runtime.core.internal.exception.MessagingException;
 
 public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 

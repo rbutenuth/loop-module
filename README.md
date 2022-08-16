@@ -91,10 +91,44 @@ Here an example to square all numbers of a collection:
 </loop:for-each>
 ```
 
+## While
+
+Loop over scope while a condition is `true`. For the first iteration, the condition is given as parameter `condition`.
+For the following conditions it is taken from the `payload`. Therefore, the payload at the end of the scope has to be
+a map with two keys:
+* `nextPayload`: The payload for the next iteration (or the result payload of the scope, if this is the last iteration).
+* `condition`: Should another iteration follow?
+
+The following example iterates over the numbers 10 to 0 (inclusive). The result is `-1` (the condition fails for `payload == 0`,
+but `nextPayload` is set to `payload - 1`):
+
+```
+<loop:while initialPayload="#[payload]" condition="true">
+    <set-payload value="#[10]" />
+	<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1 }]"/>
+</loop:while>
+```
+
+When you set the parameter `collectResults` to `true`, the result of the scope is not taken from the last payload, instead it is a collection
+of the values `addToCollection` in the payload returned by the content of the scope.
+
+The following example collects the numbers 10 to 0 (inclusive):  
+
+```
+<loop:while initialPayload="#[payload]"  condition="true" collectResults="true">
+    <set-payload value="#[10]" />
+	<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
+</loop:while>
+```
 
 ## Release notes
 
-### 1.0.2 2022-10-08 
+### 1.1.0 2022-08-??
+
+- Refactoring
+- Added while
+
+### 1.0.2 2022-08-10 
 
 - Fixed deadlock in repeat-until-payload-not-empty
 
