@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xmlns:java="http://www.mulesoft.org/schema/mule/java"
       xmlns:loop="http://www.mulesoft.org/schema/mule/loop"
-      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+      xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
       http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
       http://www.mulesoft.org/schema/mule/loop http://www.mulesoft.org/schema/mule/loop/current/mule-loop.xsd">
 
@@ -189,4 +193,31 @@
 		</loop:for-each>
 	</flow>
 	
+	<flow name="while-countdown" >
+		<set-payload value="#[10]" />
+		<loop:while initialPayload="#[payload]">
+			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1 }]"/>
+		</loop:while>
+	</flow>
+
+	<flow name="while-countdown-and-collect" >
+		<set-payload value="#[10]" />
+		<loop:while initialPayload="#[payload]" collectResults="true">
+			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
+		</loop:while>
+	</flow>
+
+	<flow name="while-payload-null" >
+		<set-payload value="#[10]" />
+		<loop:while initialPayload="#[payload]" collectResults="true">
+			<set-payload value="#[null]"/>
+		</loop:while>
+	</flow>
+	
+	<flow name="while-payload-array" >
+		<set-payload value="#[10]" />
+		<loop:while initialPayload="#[payload]" collectResults="true">
+			<set-payload value="#[[42]]"/>
+		</loop:while>
+	</flow>
 </mule>

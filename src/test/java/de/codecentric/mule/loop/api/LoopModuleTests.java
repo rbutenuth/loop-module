@@ -2,6 +2,7 @@ package de.codecentric.mule.loop.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,14 +12,15 @@ import java.util.Map;
 import org.junit.Test;
 import org.mule.functional.junit4.MuleArtifactFunctionalTestCase;
 import org.mule.runtime.api.event.Event;
+import org.mule.runtime.core.internal.exception.MessagingException;
 
-public class LoopModuleTests  extends MuleArtifactFunctionalTestCase {
+public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 
 	@Override
 	protected String getConfigFile() {
 		return "test-flows.xml";
 	}
-	
+
 	@Test
 	public void repeatUntilPayloadImmediatelyNotEmpty() throws Exception {
 		Event event = flowRunner("payload-immediately-not-empty").run();
@@ -62,6 +64,7 @@ public class LoopModuleTests  extends MuleArtifactFunctionalTestCase {
 	public void repeatUntilErrorInFirstIteration() throws Exception {
 		try {
 			flowRunner("repeat-error").run();
+			fail("should not be reached");
 		} catch (Exception e) {
 			assertEquals("nothing to repeat...", e.getMessage());
 		}
@@ -99,6 +102,7 @@ public class LoopModuleTests  extends MuleArtifactFunctionalTestCase {
 	public void loopWithCounterAndErrorInFirstIteration() throws Exception {
 		try {
 			flowRunner("loop-counter-error-in-first-iteration").run();
+			fail("should not be reached");
 		} catch (Exception e) {
 			assertEquals("nothing to describe...", e.getMessage());
 		}
@@ -108,6 +112,7 @@ public class LoopModuleTests  extends MuleArtifactFunctionalTestCase {
 	public void loopWithCounterAndErrorInSecondIteration() throws Exception {
 		try {
 			flowRunner("loop-counter-error-in-second-iteration").run();
+			fail("should not be reached");
 		} catch (Exception e) {
 			assertEquals("counter: 1.", e.getMessage());
 		}
@@ -117,6 +122,7 @@ public class LoopModuleTests  extends MuleArtifactFunctionalTestCase {
 	public void loopErrorInFirstIteration() throws Exception {
 		try {
 			flowRunner("loop-error-in-first-iteration").run();
+			fail("should not be reached");
 		} catch (Exception e) {
 			assertEquals("nothing to describe...", e.getMessage());
 		}
@@ -126,6 +132,7 @@ public class LoopModuleTests  extends MuleArtifactFunctionalTestCase {
 	public void loopErrorInSecondIteration() throws Exception {
 		try {
 			flowRunner("loop-error-in-second-iteration").run();
+			fail("should not be reached");
 		} catch (Exception e) {
 			assertEquals("nothing to describe...", e.getMessage());
 		}
@@ -153,8 +160,47 @@ public class LoopModuleTests  extends MuleArtifactFunctionalTestCase {
 		}
 		try {
 			flowRunner("for-each-with-error").withPayload(values).run();
+			fail("should not be reached");
 		} catch (Exception e) {
 			assertEquals("nothing to describe...", e.getMessage());
+		}
+	}
+
+	@Test
+	public void whileCountDown() throws Exception {
+		Event event = flowRunner("while-countdown").run();
+		Integer payload = (Integer) event.getMessage().getPayload().getValue();
+		assertEquals(Integer.valueOf(-1), payload);
+	}
+
+	@Test
+	public void whileCountDownAndCollect() throws Exception {
+		Event event = flowRunner("while-countdown-and-collect").run();
+		@SuppressWarnings("unchecked")
+		List<Integer> payload = (List<Integer>) event.getMessage().getPayload().getValue();
+		assertEquals(11, payload.size());
+		for (int i = 0; i < 11; i++) {
+			assertEquals(Integer.valueOf(10 - i), payload.get(i));
+		}
+	}
+
+	@Test
+	public void whileErrorPayloadNull() throws Exception {
+		try {
+			flowRunner("while-payload-null").run();
+			fail("should not be reached");
+		} catch (Exception e) {
+			assertEquals("Payload should be Map, but is: null.", e.getMessage());
+		}
+	}
+
+	@Test
+	public void whileErrorPayloadArray() throws Exception {
+		try {
+			flowRunner("while-payload-array").run();
+			fail("should not be reached");
+		} catch (Exception e) {
+			assertEquals("Payload should be Map, but is: class java.util.ArrayList.", e.getMessage());
 		}
 	}
 

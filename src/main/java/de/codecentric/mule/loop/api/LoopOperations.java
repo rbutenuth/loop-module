@@ -43,7 +43,7 @@ public class LoopOperations {
 		} while (continueLoop);
 	}
 
-	private boolean isEmpty(Object output) {
+	private static boolean isEmpty(Object output) {
 		if (output == null) {
 			logger.debug("output is null");
 			return true;
@@ -69,7 +69,9 @@ public class LoopOperations {
 	@Alias("while")
 	@Throws(value = OperationErrorTypeProvider.class)
 	public void whileLoop(Chain operations, CompletionCallback<Object, Object> callback,
-			 boolean condition, Object initialPayload, boolean collectResults) throws InterruptedException {
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "true") boolean condition, //
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Object initialPayload, //
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "false") boolean collectResults) throws InterruptedException {
 		ArrayBlockingQueue<Entry> queue = new ArrayBlockingQueue<>(1);
 		List<Object> resultCollection = collectResults ? new ArrayList<>() : null;
 		boolean firstIteration = true;
@@ -123,7 +125,7 @@ public class LoopOperations {
 	 * @return <code>null</code>: false, {@link Boolean}: value, otherwise:
 	 *         !{@link #isEmpty(Object)}
 	 */
-	boolean evaluateCondition(Object condition) {
+	static boolean evaluateCondition(Object condition) {
 		if (condition == null) {
 			return false;
 		} else if (condition instanceof Boolean) {
