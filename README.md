@@ -123,7 +123,7 @@ The following example collects the numbers 10 to 0 (inclusive):
 
 ## Release notes
 
-### 1.1.0 2022-08-??
+### 1.1.0 2022-08-16
 
 - Refactoring
 - Added while
