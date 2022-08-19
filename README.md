@@ -2,16 +2,18 @@
 
 ## Introduction
 
-This module adds three variant of loops to Mule 4 flows:
+This module adds four variants of loops to Mule 4 flows:
 
 1. A repeat until loop: This loops runs at least once and is repeated until the body produces a non empty payload.
-2. A for loop, counting from a start to an end value.
-3. A for-each loop, similar to the for-each available in Mule 4, but collecting the payloads.
+2. A while loop, where the payload controls the loop continuation and the payload for the next iteration.
+   Controlled by a flag, the loop allows to collect results from the iterations. 
+3. A for loop, counting from a start to an end value.
+4. A for-each loop, similar to the for-each available in Mule 4, but collecting the payloads.
+
 
 Caused by the way how scopes are implemented in the Mule SDK (asynchronous), it is possible to transfer variables 
 into the scope, but there is no way to transfer variables out of the scope. So any changes to variables within the
-loop are only visible within the the loop. The first two variants return the payload of the last iteration, the third
-a collection of the payloads of all iterations. 
+loop are only visible within the current loop iteration.
 
 ## Maven Dependency
 
@@ -21,7 +23,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.0.1</version>
+	<version>1.1.0</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
@@ -94,7 +96,7 @@ Here an example to square all numbers of a collection:
 ## While
 
 Loop over scope while a condition is `true`. For the first iteration, the condition is given as parameter `condition`.
-For the following conditions it is taken from the `payload`. Therefore, the payload at the end of the scope has to be
+For the following iterations it is taken from the `payload`. Therefore, the payload at the end of the scope has to be
 a map with two keys:
 * `nextPayload`: The payload for the next iteration (or the result payload of the scope, if this is the last iteration).
 * `condition`: Should another iteration follow?
@@ -115,7 +117,7 @@ of the values `addToCollection` in the payload returned by the content of the sc
 The following example collects the numbers 10 to 0 (inclusive):  
 
 ```
-<loop:while initialPayload="#[payload]"  condition="true" collectResults="true">
+<loop:while initialPayload="#[payload]" condition="true" collectResults="true">
     <set-payload value="#[10]" />
 	<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
 </loop:while>
