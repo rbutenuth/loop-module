@@ -85,7 +85,8 @@ set in front of the loop, followed by 41 `x` added within the loop:
 ## For-Each
 
 The loop iterates over payload, or the optional collection given in the parameter `values`.
-Here an example to square all numbers of a collection:
+In contrast to the builtin for-each loop, the payloads of the iterations are collected and returned as an array.
+So this example squares all numbers of a collection and returns a collection with the squares:
 
 ```
 <loop:for-each>
