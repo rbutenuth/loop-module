@@ -5,7 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-public class LoopOperatonsMethodTests {
+public class LoopOperationsMethodTests {
 
 	@Test
 	public void conditionNullIsFalse() throws Exception {
