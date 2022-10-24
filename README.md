@@ -13,7 +13,8 @@ This module adds four variants of loops to Mule 4 flows:
 
 Caused by the way how scopes are implemented in the Mule SDK (asynchronous), it is possible to transfer variables 
 into the scope, but there is no way to transfer variables out of the scope. So any changes to variables within the
-loop are only visible within the current loop iteration.
+loop are only visible within the current loop iteration. In the next iteration, all variables have the same value
+as when entering the scope.
 
 ## Maven Dependency
 
@@ -93,6 +94,10 @@ So this example squares all numbers of a collection and returns a collection wit
 	<set-payload value="#[payload * payload]"/>
 </loop:for-each>
 ```
+
+The payload at the end of the loop body should be of Mime type `application/java`. When you return a JSON
+payload, it is stored as String (without further type information) in the array. So you end with an array
+of Strings with JSON content, which will not be parsed automatically by the runtime engine. 
 
 ## While
 
