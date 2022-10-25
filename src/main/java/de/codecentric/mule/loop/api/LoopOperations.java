@@ -213,7 +213,7 @@ public class LoopOperations {
 	}
 
 	@Alias("for-each")
-	public void forLoop(Chain operations, CompletionCallback<Object, Object> callback, //
+	public void forEachLoop(Chain operations, CompletionCallback<Object, Object> callback, //
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values)
 			throws InterruptedException {
 		AtomicBoolean errorOccured = new AtomicBoolean(false);
