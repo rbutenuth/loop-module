@@ -24,7 +24,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.1.0</version>
+	<version>1.1.2</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
@@ -130,6 +130,10 @@ The following example collects the numbers 10 to 0 (inclusive):
 ```
 
 ## Release notes
+
+### 1.1.2 2022-10-25
+
+- Fixed method name clash (relevant when using for and for-each in same project)
 
 ### 1.1.0 2022-08-16
 
