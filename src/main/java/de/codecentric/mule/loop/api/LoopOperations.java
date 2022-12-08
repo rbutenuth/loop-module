@@ -1,5 +1,7 @@
 package de.codecentric.mule.loop.api;
 
+import static de.codecentric.mule.loop.api.PayloadAfterLoop.COLLECTION_OF_ALL_PAYLOADS_WITHIN;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,9 +73,9 @@ public class LoopOperations {
 	public void whileLoop(Chain operations, CompletionCallback<Object, Object> callback,
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "true") boolean condition, //
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Object initialPayload, //
-			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "false") boolean collectResults) throws InterruptedException {
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "PAYLOAD_OF_LAST_ITERATION") PayloadAfterLoop resultPayload) throws InterruptedException {
 		ArrayBlockingQueue<Entry> queue = new ArrayBlockingQueue<>(1);
-		List<Object> resultCollection = collectResults ? new ArrayList<>() : null;
+		List<Object> resultCollection = resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN ? new ArrayList<>() : null;
 		boolean firstIteration = true;
 		Entry entry = new Entry(condition, false, initialPayload);
 
@@ -87,7 +89,7 @@ public class LoopOperations {
 							LoopError.PAYLOAD_IS_NOT_MAP);
 				}
 				Map<String, Object> payload = (Map<String, Object>)rawPayload;
-				if (collectResults) {
+				if (resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN) {
 					resultCollection.add(payload.get("addToCollection"));
 				}
 				queue.offer(new Entry(evaluateCondition(payload.get("condition")), false, payload.get("nextPayload")));
@@ -100,11 +102,7 @@ public class LoopOperations {
 			firstIteration = false;
 		}
 		if (!entry.error) {
-			if (collectResults) {
-				callback.success(Result.<Object, Object>builder().output(resultCollection).build());
-			} else {
-				callback.success(Result.<Object, Object>builder().output(entry.payload).build());
-			}
+			callback.success(Result.<Object, Object>builder().output(resultPayload.result(initialPayload, resultCollection, entry.payload)).build());
 		}
 	}
 	

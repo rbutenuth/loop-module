@@ -184,6 +184,13 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 	}
 
 	@Test
+	public void whileCountDownPayloadBefore() throws Exception {
+		Event event = flowRunner("while-countdown-payload-before").run();
+		Integer payload = (Integer) event.getMessage().getPayload().getValue();
+		assertEquals(Integer.valueOf(5), payload);
+	}
+
+	@Test
 	public void whileErrorPayloadNull() throws Exception {
 		try {
 			flowRunner("while-payload-null").run();

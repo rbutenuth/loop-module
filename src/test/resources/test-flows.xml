@@ -202,22 +202,29 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 
 	<flow name="while-countdown-and-collect" >
 		<set-payload value="#[10]" />
-		<loop:while initialPayload="#[payload]" collectResults="true">
+		<loop:while initialPayload="#[payload]" resultPayload="COLLECTION_OF_ALL_PAYLOADS_WITHIN">
 			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
 		</loop:while>
 	</flow>
 
 	<flow name="while-payload-null" >
 		<set-payload value="#[10]" />
-		<loop:while initialPayload="#[payload]" collectResults="true">
+		<loop:while initialPayload="#[payload]" resultPayload="COLLECTION_OF_ALL_PAYLOADS_WITHIN">
 			<set-payload value="#[null]"/>
 		</loop:while>
 	</flow>
 	
 	<flow name="while-payload-array" >
 		<set-payload value="#[10]" />
-		<loop:while initialPayload="#[payload]" collectResults="true">
+		<loop:while initialPayload="#[payload]" resultPayload="COLLECTION_OF_ALL_PAYLOADS_WITHIN">
 			<set-payload value="#[[42]]"/>
+		</loop:while>
+	</flow>
+
+	<flow name="while-countdown-payload-before" >
+		<set-payload value="#[5]" />
+		<loop:while initialPayload="#[payload]" resultPayload="PAYLOAD_BEFORE_LOOP">
+			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1 }]"/>
 		</loop:while>
 	</flow>
 </mule>

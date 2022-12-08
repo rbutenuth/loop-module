@@ -117,19 +117,30 @@ but `nextPayload` is set to `payload - 1`):
 </loop:while>
 ```
 
-When you set the parameter `collectResults` to `true`, the result of the scope is not taken from the last payload, instead it is a collection
-of the values `addToCollection` in the payload returned by the content of the scope.
+The parameter `collectResults` controls the value of the payload after the loop. There are three possible options:
+
+- PAYLOAD_BEFORE_LOOP: The value of the payload before the loop started.
+- COLLECTION_OF_ALL_PAYLOADS_WITHIN: A collection of the values `addToCollection` from all iterations.
+- PAYLOAD_OF_LAST_ITERATION: The value ov `nextPayload`from the last iteration.
+
+The default is `PAYLOAD_OF_LAST_ITERATION`
 
 The following example collects the numbers 10 to 0 (inclusive):  
 
 ```
-<loop:while initialPayload="#[payload]" condition="true" collectResults="true">
+<loop:while initialPayload="#[payload]" condition="true" resultPayload="COLLECTION_OF_ALL_PAYLOADS_WITHIN">
     <set-payload value="#[10]" />
 	<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
 </loop:while>
 ```
 
 ## Release notes
+
+### 1.1.3 2022-12-08
+
+- Updated versions of all plugins and dependencies
+- Enum instead of boolean in while loop, with additional option PAYLOAD_BEFORE_LOOP.
+  (This is a breaking change when you set the boolean to `true` before.)
 
 ### 1.1.2 2022-10-25
 
