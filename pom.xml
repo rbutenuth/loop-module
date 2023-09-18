@@ -20,7 +20,6 @@
 		<category>Community</category>
 		<licensePath>LICENSE.md</licensePath>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<build.plugin.cobertura.version>2.7</build.plugin.cobertura.version>
 		<project.scm.id>GitHub</project.scm.id>
 		<dependency.locations.enabled>false</dependency.locations.enabled>	
 	</properties>
@@ -43,7 +42,7 @@
 
 	<scm>
 		<connection>scm:git:git@github.com:rbutenuth/loop-module.git</connection>
-		<tag>loop-module-1.0.0</tag>
+		<tag>loop-module-1.1.4</tag>
 	</scm>
 
 	<distributionManagement>
@@ -66,7 +65,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.4.1</version>
+						<version>3.6.0</version>
 						<configuration>
 							<!-- <excludePackageNames>de.codecentric.mule.assertobjectequals.generated.*</excludePackageNames> -->
 						</configuration>
@@ -91,7 +90,7 @@
 								</goals>
 							</execution>
 						</executions>
-						<version>3.0.1</version>
+						<version>3.1.0</version>
 					</plugin>
 				</plugins>
 			</build>
@@ -103,7 +102,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.10.1</version>
+				<version>3.11.0</version>
 				<configuration>
 					<source>${java-version}</source>
 					<target>${java-version}</target>
@@ -126,7 +125,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>cobertura-maven-plugin</artifactId>
-				<version>${build.plugin.cobertura.version}</version>
+				<version>2.7</version>
 				<configuration>
 					<format>html</format>
 					<maxmem>256m</maxmem>
@@ -143,7 +142,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>2.5.3</version>
+				<version>3.0.1</version>
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<useReleaseProfile>false</useReleaseProfile>
@@ -156,12 +155,12 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
-				<version>3.12.21</version>
+				<version>3.12.1</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
-				<version>3.4.1</version>
+				<version>3.4.5</version>
 			</plugin>
 		</plugins>
 	</build>
@@ -170,7 +169,7 @@
 		<dependency>
 			<groupId>org.mule.module</groupId>
 			<artifactId>mule-java-module</artifactId>
-			<version>1.2.10</version>
+			<version>1.2.11</version>
 			<classifier>mule-plugin</classifier>
 		</dependency>
 	</dependencies>
