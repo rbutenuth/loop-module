@@ -215,8 +215,17 @@ public class LoopOperations {
 
 	@Alias("for-each")
 	public void forEachLoop(Chain operations, CompletionCallback<Object, Object> callback, //
-			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values)
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values,
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "false") boolean streaming)
 			throws InterruptedException {
+		if (streaming) {
+			forEachLoopStreaming(operations, callback, values);
+		} else {
+			forEachLoopInMemory(operations, callback, values);
+		}
+	}
+
+	public void forEachLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, Collection<Object> values) throws InterruptedException {
 		AtomicBoolean errorOccured = new AtomicBoolean(false);
 		Collection<Object> resultCollection = new ArrayList<>(values.size());
 		ArrayBlockingQueue<Optional<Object>> queue = new ArrayBlockingQueue<>(1);
@@ -239,9 +248,7 @@ public class LoopOperations {
 		}
 	}
 
-	@Alias("for-each-streaming")
-	public void forEachLoopReturningIterator(Chain operations, CompletionCallback<Object, Object> callback, //
-			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values) {
+	public void forEachLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, Collection<Object> values) {
 		Iterator<Object> inputIterator = values.iterator();
 		Iterator<Object> result = new Iterator<Object>() {
 

@@ -194,16 +194,16 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	</flow>
 	
 	<flow name="for-each-streaming">
-		<loop:for-each-streaming>
+		<loop:for-each streaming="true">
 			<logger level="DEBUG" message='#[payload]' category="for-each" />
 			<set-payload value="#[payload * payload]"/>
-		</loop:for-each-streaming>
+		</loop:for-each>
 	</flow>
 	
 	<flow name="for-each-streaming-with-error">
-		<loop:for-each-streaming>
+		<loop:for-each streaming="true">
 			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="nothing to describe..." />
-		</loop:for-each-streaming>
+		</loop:for-each>
 	</flow>
 	
 	<flow name="while-countdown" >
