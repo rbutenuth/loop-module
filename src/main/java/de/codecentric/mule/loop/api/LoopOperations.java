@@ -5,6 +5,7 @@ import static de.codecentric.mule.loop.api.PayloadAfterLoop.COLLECTION_OF_ALL_PA
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -73,7 +74,8 @@ public class LoopOperations {
 	public void whileLoop(Chain operations, CompletionCallback<Object, Object> callback,
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "true") boolean condition, //
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Object initialPayload, //
-			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "PAYLOAD_OF_LAST_ITERATION") PayloadAfterLoop resultPayload) throws InterruptedException {
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "PAYLOAD_OF_LAST_ITERATION") PayloadAfterLoop resultPayload)
+			throws InterruptedException {
 		ArrayBlockingQueue<Entry> queue = new ArrayBlockingQueue<>(1);
 		List<Object> resultCollection = resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN ? new ArrayList<>() : null;
 		boolean firstIteration = true;
@@ -82,13 +84,13 @@ public class LoopOperations {
 		while (entry.condition) {
 			Object nextPayload = firstIteration ? initialPayload : entry.payload;
 			operations.process(nextPayload, Collections.EMPTY_MAP, result -> {
-				Object rawPayload = result.getOutput(); 
+				Object rawPayload = result.getOutput();
 				if (!(rawPayload instanceof Map)) {
 					throw new ModuleException(
 							"Payload should be Map, but is: " + (rawPayload == null ? "null" : rawPayload.getClass()),
 							LoopError.PAYLOAD_IS_NOT_MAP);
 				}
-				Map<String, Object> payload = (Map<String, Object>)rawPayload;
+				Map<String, Object> payload = (Map<String, Object>) rawPayload;
 				if (resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN) {
 					resultCollection.add(payload.get("addToCollection"));
 				}
@@ -102,10 +104,11 @@ public class LoopOperations {
 			firstIteration = false;
 		}
 		if (!entry.error) {
-			callback.success(Result.<Object, Object>builder().output(resultPayload.result(initialPayload, resultCollection, entry.payload)).build());
+			callback.success(Result.<Object, Object>builder()
+					.output(resultPayload.result(initialPayload, resultCollection, entry.payload)).build());
 		}
 	}
-	
+
 	static class Entry {
 		private final boolean condition;
 		private final boolean error;
@@ -233,6 +236,56 @@ public class LoopOperations {
 		}
 		if (!errorOccured.get()) {
 			callback.success(Result.<Object, Object>builder().output(resultCollection).build());
+		}
+	}
+
+	@Alias("for-each-streaming")
+	public void forEachLoopReturningIterator(Chain operations, CompletionCallback<Object, Object> callback, //
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values) {
+		Iterator<Object> inputIterator = values.iterator();
+		Iterator<Object> result = new Iterator<Object>() {
+
+			@Override
+			public boolean hasNext() {
+				return inputIterator.hasNext();
+			}
+
+			@Override
+			public Object next() {
+				Object value = inputIterator.next();
+				ArrayBlockingQueue<QueueEntry> queue = new ArrayBlockingQueue<>(1);
+				operations.process(value, Collections.EMPTY_MAP, result -> {
+					queue.offer(new QueueEntry(result.getOutput()));
+				}, (error, previous) -> {
+					queue.offer(new QueueEntry(error));
+				});
+				try {
+					QueueEntry entry = queue.take();
+					if (entry.error == null) {
+						return entry.value;
+					} else {
+						throw new RuntimeException(entry.error);
+					}
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		};
+		callback.success(Result.<Object, Object>builder().output(result).build());
+	}
+	
+	private static class QueueEntry {
+		private final Object value;
+		private final Throwable error;
+		
+		public QueueEntry(Object value) {
+			this.value = value;
+			error = null;
+		}
+
+		public QueueEntry(Throwable error) {
+			value = null;
+			this.error = error;
 		}
 	}
 }

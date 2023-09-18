@@ -1,11 +1,14 @@
 package de.codecentric.mule.loop.api;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -162,6 +165,41 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 			fail("should not be reached");
 		} catch (Exception e) {
 			assertEquals("nothing to describe...", e.getMessage());
+		}
+	}
+
+	@Test
+	public void forEachStreaming() throws Exception {
+		Collection<Integer> values = new ArrayList<>(100);
+		for (int i = 0; i < 100; i++) {
+			values.add(i);
+		}
+		Event event = flowRunner("for-each-streaming").withPayload(values).run();
+		@SuppressWarnings("unchecked")
+		Iterator<Integer> payload = (Iterator<Integer>) event.getMessage().getPayload().getValue();
+		for (int i = 0; i < 100; i++) {
+			assertTrue(payload.hasNext());
+			assertEquals(Integer.valueOf(i * i), payload.next());
+		}
+		assertFalse(payload.hasNext());
+	}
+
+	@Test
+	public void forEachStreamingWithError() throws Exception {
+		Collection<Integer> values = new ArrayList<>(100);
+		for (int i = 0; i < 100; i++) {
+			values.add(i);
+		}
+		Event event = flowRunner("for-each-streaming-with-error").withPayload(values).run();
+		@SuppressWarnings("unchecked")
+		Iterator<Integer> payload = (Iterator<Integer>) event.getMessage().getPayload().getValue();
+		assertTrue(payload.hasNext());
+		try {
+			payload.next();
+			fail("should not be reached");
+		} catch (Throwable e) {
+			assertTrue(e instanceof RuntimeException);
+			assertEquals("nothing to describe...", e.getCause().getMessage());
 		}
 	}
 
