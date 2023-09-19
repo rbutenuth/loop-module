@@ -86,7 +86,7 @@ set in front of the loop, followed by 41 `x` added within the loop:
 ## For-Each
 
 The loop iterates over payload, or the optional collection given in the parameter `values`.
-In contrast to the builtin for-each loop, the payloads of the iterations are collected and returned as an array.
+In contrast to the builtin for-each loop, the payloads of the iterations are collected and returned as an array list.
 So this example squares all numbers of a collection and returns a collection with the squares:
 
 ```
@@ -94,6 +94,12 @@ So this example squares all numbers of a collection and returns a collection wit
 	<set-payload value="#[payload * payload]"/>
 </loop:for-each>
 ```
+
+You can add the property `streaming="true"`. In this case, the result is not an array list but an iterator.
+Be careful: The processing of the body of the loop is delayed until the iterator is consumed. 
+Consider this when you are handling transactions: In this case, the loop and the message processor consuming
+the result must be in the same transactional context (Try scope).
+Additionally, the iterator can be consumed only once, when you try to consume it a second time, it's empty. 
 
 The payload at the end of the loop body should be of Mime type `application/java`. When you return a JSON
 payload, it is stored as String (without further type information) in the array. So you end with an array
@@ -135,6 +141,10 @@ The following example collects the numbers 10 to 0 (inclusive):
 ```
 
 ## Release notes
+
+### 1.1.4 2023-09-18
+
+- Added streaming in for-each
 
 ### 1.1.3 2022-12-08
 
