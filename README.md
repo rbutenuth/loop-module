@@ -83,6 +83,9 @@ set in front of the loop, followed by 41 `x` added within the loop:
 </loop:for>
 ```
 
+Note: Don't use this type of accumulation in production, as it has time complexity O(n²). You don't 
+add an `X` to the payload, you are creating a new payload in each loop body.
+
 ## For-Each
 
 The loop iterates over payload, or the optional collection given in the parameter `values`.
