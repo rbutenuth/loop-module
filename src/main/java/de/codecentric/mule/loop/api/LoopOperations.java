@@ -225,7 +225,7 @@ public class LoopOperations {
 		}
 	}
 
-	public void forEachLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, Collection<Object> values) throws InterruptedException {
+	private void forEachLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, Collection<Object> values) throws InterruptedException {
 		AtomicBoolean errorOccured = new AtomicBoolean(false);
 		Collection<Object> resultCollection = new ArrayList<>(values.size());
 		ArrayBlockingQueue<Optional<Object>> queue = new ArrayBlockingQueue<>(1);
@@ -248,7 +248,7 @@ public class LoopOperations {
 		}
 	}
 
-	public void forEachLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, Collection<Object> values) {
+	private void forEachLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, Collection<Object> values) {
 		Iterator<Object> inputIterator = values.iterator();
 		Iterator<Object> result = new Iterator<Object>() {
 
