@@ -68,7 +68,6 @@ public class LoopOperations {
 		return false;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Alias("while")
 	@Throws(value = OperationErrorTypeProvider.class)
 	public void whileLoop(Chain operations, CompletionCallback<Object, Object> callback,
@@ -76,6 +75,14 @@ public class LoopOperations {
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Object initialPayload, //
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "PAYLOAD_OF_LAST_ITERATION") PayloadAfterLoop resultPayload)
 			throws InterruptedException {
+		if (resultPayload == PayloadAfterLoop.ITERATOR_OF_ALL_PAYLOADS_WITHIN) {
+			whileLoopStreaming(operations, callback, condition, initialPayload);
+		} else {
+			whileLoopInMemory(operations, callback, condition, initialPayload, resultPayload);
+		}
+	}
+
+	private void whileLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, boolean condition, Object initialPayload, PayloadAfterLoop resultPayload) throws InterruptedException {
 		ArrayBlockingQueue<Entry> queue = new ArrayBlockingQueue<>(1);
 		List<Object> resultCollection = resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN ? new ArrayList<>() : null;
 		boolean firstIteration = true;
@@ -84,13 +91,7 @@ public class LoopOperations {
 		while (entry.condition) {
 			Object nextPayload = firstIteration ? initialPayload : entry.payload;
 			operations.process(nextPayload, Collections.EMPTY_MAP, result -> {
-				Object rawPayload = result.getOutput();
-				if (!(rawPayload instanceof Map)) {
-					throw new ModuleException(
-							"Payload should be Map, but is: " + (rawPayload == null ? "null" : rawPayload.getClass()),
-							LoopError.PAYLOAD_IS_NOT_MAP);
-				}
-				Map<String, Object> payload = (Map<String, Object>) rawPayload;
+				Map<String, Object> payload = payloadAsMap(result);
 				if (resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN) {
 					resultCollection.add(payload.get("addToCollection"));
 				}
@@ -104,12 +105,31 @@ public class LoopOperations {
 			firstIteration = false;
 		}
 		if (!entry.error) {
-			callback.success(Result.<Object, Object>builder()
-					.output(resultPayload.result(initialPayload, resultCollection, entry.payload)).build());
+			if (resultPayload == PayloadAfterLoop.COLLECTION_OF_ALL_PAYLOADS_WITHIN) {
+				callback.success(Result.<Object, Object>builder().output(resultCollection).build());
+			} else if (resultPayload == PayloadAfterLoop.PAYLOAD_BEFORE_LOOP) {
+				callback.success(Result.<Object, Object>builder().output(initialPayload).build());
+			} else { // PAYLOAD_OF_LAST_ITERATION
+				callback.success(Result.<Object, Object>builder().output(entry.payload).build());
+			}
 		}
 	}
+	
+	private void whileLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, boolean condition, Object initialPayload) throws InterruptedException {
+	}
+	
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> payloadAsMap(Result<?, ?> result) {
+		Object rawPayload = result.getOutput();
+		if (!(rawPayload instanceof Map)) {
+			throw new ModuleException(
+					"Payload should be Map, but is: " + (rawPayload == null ? "null" : rawPayload.getClass()),
+					LoopError.PAYLOAD_IS_NOT_MAP);
+		}
+		return (Map<String, Object>) rawPayload;
+	}
 
-	static class Entry {
+	private static class Entry {
 		private final boolean condition;
 		private final boolean error;
 		private final Object payload;
