@@ -240,4 +240,19 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1 }]"/>
 		</loop:while>
 	</flow>
+
+	<flow name="while-countdown-and-iterate" >
+		<set-payload value="#[10]" />
+		<loop:while initialPayload="#[payload]" resultPayload="ITERATOR_OF_ALL_PAYLOADS_WITHIN">
+			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
+		</loop:while>
+	</flow>
+
+	<flow name="while-streaming-error" >
+		<set-payload value="#[10]" />
+		<loop:while initialPayload="#[payload]" resultPayload="ITERATOR_OF_ALL_PAYLOADS_WITHIN">
+			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="Bäm!" />
+		</loop:while>
+	</flow>
+
 </mule>

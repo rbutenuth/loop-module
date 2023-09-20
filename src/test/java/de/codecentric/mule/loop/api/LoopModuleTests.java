@@ -248,4 +248,31 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 		}
 	}
 
+	@Test
+	public void whileCountDownAndIterate() throws Exception {
+		Event event = flowRunner("while-countdown-and-iterate").run();
+		@SuppressWarnings("unchecked")
+		Iterator<Integer> payload = (Iterator<Integer>) event.getMessage().getPayload().getValue();
+		for (int i = 0; i < 11; i++) {
+			assertTrue(payload.hasNext());
+			assertEquals(Integer.valueOf(10 - i), payload.next());
+		}
+		assertFalse(payload.hasNext());
+	}
+
+	@Test
+	public void whileStreamingError() throws Exception {
+		try {
+			Event event = flowRunner("while-streaming-error").run();
+			@SuppressWarnings("unchecked")
+			Iterator<Integer> payload = (Iterator<Integer>) event.getMessage().getPayload().getValue();
+			assertTrue(payload.hasNext());
+			payload.next();
+			fail("should not be reached");
+		} catch (Exception e) {
+			assertTrue(e.getMessage().contains("Bäm!"));
+			assertTrue(e.getMessage().contains("MY_NAMESPACE:MY_IDENTIFIER"));
+		}
+	}
+
 }

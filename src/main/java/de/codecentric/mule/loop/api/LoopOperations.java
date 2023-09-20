@@ -83,28 +83,28 @@ public class LoopOperations {
 	}
 
 	private void whileLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, boolean condition, Object initialPayload, PayloadAfterLoop resultPayload) throws InterruptedException {
-		ArrayBlockingQueue<Entry> queue = new ArrayBlockingQueue<>(1);
+		ArrayBlockingQueue<WhileQueueEntry> queue = new ArrayBlockingQueue<>(1);
 		List<Object> resultCollection = resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN ? new ArrayList<>() : null;
 		boolean firstIteration = true;
-		Entry entry = new Entry(condition, false, initialPayload);
+		WhileQueueEntry entry = new WhileQueueEntry(condition, initialPayload, null);
 
 		while (entry.condition) {
 			Object nextPayload = firstIteration ? initialPayload : entry.payload;
 			operations.process(nextPayload, Collections.EMPTY_MAP, result -> {
 				Map<String, Object> payload = payloadAsMap(result);
-				if (resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN) {
-					resultCollection.add(payload.get("addToCollection"));
-				}
-				queue.offer(new Entry(evaluateCondition(payload.get("condition")), false, payload.get("nextPayload")));
+				queue.offer(new WhileQueueEntry(evaluateCondition(payload.get("condition")), payload.get("nextPayload"), payload.get("addToCollection")));
 			}, (error, previous) -> {
 				callback.error(error);
 				// Make sure while() does not hang in case of error
-				queue.offer(new Entry(false, true, null));
+				queue.offer(new WhileQueueEntry(error));
 			});
 			entry = queue.take();
+			if (resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN) {
+				resultCollection.add(entry.addToCollection);
+			}
 			firstIteration = false;
 		}
-		if (!entry.error) {
+		if (entry.error == null) {
 			if (resultPayload == PayloadAfterLoop.COLLECTION_OF_ALL_PAYLOADS_WITHIN) {
 				callback.success(Result.<Object, Object>builder().output(resultCollection).build());
 			} else if (resultPayload == PayloadAfterLoop.PAYLOAD_BEFORE_LOOP) {
@@ -116,6 +116,38 @@ public class LoopOperations {
 	}
 	
 	private void whileLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, boolean condition, Object initialPayload) throws InterruptedException {
+		Iterator<Object> result = new Iterator<Object>() {
+			boolean firstIteration = true;
+			WhileQueueEntry entry = new WhileQueueEntry(condition, initialPayload, null);
+
+			@Override
+			public boolean hasNext() {
+				return entry.condition;
+			}
+
+			@Override
+			public Object next() {
+				Object nextPayload = firstIteration ? initialPayload : entry.payload;
+				ArrayBlockingQueue<WhileQueueEntry> queue = new ArrayBlockingQueue<>(1);
+				operations.process(nextPayload, Collections.EMPTY_MAP, result -> {
+					Map<String, Object> payload = payloadAsMap(result);
+					queue.offer(new WhileQueueEntry(evaluateCondition(payload.get("condition")), payload.get("nextPayload"), payload.get("addToCollection")));
+				}, (error, previous) -> {
+					queue.offer(new WhileQueueEntry(error));
+				});
+				try {
+					firstIteration = false;
+					entry = queue.take();
+					if (entry.error != null) {
+						throw new RuntimeException(entry.error);
+					}
+					return entry.addToCollection;
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		};
+		callback.success(Result.<Object, Object>builder().output(result).build());
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -129,15 +161,24 @@ public class LoopOperations {
 		return (Map<String, Object>) rawPayload;
 	}
 
-	private static class Entry {
+	private static class WhileQueueEntry {
 		private final boolean condition;
-		private final boolean error;
+		private final Throwable error;
 		private final Object payload;
+		private final Object addToCollection;
 
-		public Entry(boolean condition, boolean error, Object payload) {
+		public WhileQueueEntry(boolean condition, Object payload, Object addToCollection) {
 			this.condition = condition;
-			this.error = error;
+			this.error = null;
 			this.payload = payload;
+			this.addToCollection = addToCollection;
+		}
+		
+		public WhileQueueEntry(Throwable error) {
+			this.condition = false;
+			this.error = error;
+			this.payload = null;
+			this.addToCollection = null;
 		}
 	}
 
@@ -280,14 +321,14 @@ public class LoopOperations {
 			@Override
 			public Object next() {
 				Object value = inputIterator.next();
-				ArrayBlockingQueue<QueueEntry> queue = new ArrayBlockingQueue<>(1);
+				ArrayBlockingQueue<ForQueueEntry> queue = new ArrayBlockingQueue<>(1);
 				operations.process(value, Collections.EMPTY_MAP, result -> {
-					queue.offer(new QueueEntry(result.getOutput()));
+					queue.offer(new ForQueueEntry(result.getOutput()));
 				}, (error, previous) -> {
-					queue.offer(new QueueEntry(error));
+					queue.offer(new ForQueueEntry(error));
 				});
 				try {
-					QueueEntry entry = queue.take();
+					ForQueueEntry entry = queue.take();
 					if (entry.error == null) {
 						return entry.value;
 					} else {
@@ -301,16 +342,16 @@ public class LoopOperations {
 		callback.success(Result.<Object, Object>builder().output(result).build());
 	}
 	
-	private static class QueueEntry {
+	private static class ForQueueEntry {
 		private final Object value;
 		private final Throwable error;
 		
-		public QueueEntry(Object value) {
+		public ForQueueEntry(Object value) {
 			this.value = value;
 			error = null;
 		}
 
-		public QueueEntry(Throwable error) {
+		public ForQueueEntry(Throwable error) {
 			value = null;
 			this.error = error;
 		}
