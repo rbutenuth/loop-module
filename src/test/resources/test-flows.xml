@@ -251,7 +251,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<flow name="while-streaming-error" >
 		<set-payload value="#[10]" />
 		<loop:while initialPayload="#[payload]" resultPayload="ITERATOR_OF_ALL_PAYLOADS_WITHIN">
-			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="Bäm!" />
+			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="Bumm!" />
 		</loop:while>
 	</flow>
 

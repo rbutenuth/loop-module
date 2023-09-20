@@ -270,7 +270,7 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 			payload.next();
 			fail("should not be reached");
 		} catch (Exception e) {
-			assertTrue(e.getMessage().contains("Bäm!"));
+			assertTrue(e.getMessage().contains("Bumm!"));
 			assertTrue(e.getMessage().contains("MY_NAMESPACE:MY_IDENTIFIER"));
 		}
 	}
