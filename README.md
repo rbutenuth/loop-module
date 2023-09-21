@@ -130,6 +130,7 @@ The parameter `collectResults` controls the value of the payload after the loop.
 
 - PAYLOAD_BEFORE_LOOP: The value of the payload before the loop started.
 - COLLECTION_OF_ALL_PAYLOADS_WITHIN: A collection of the values `addToCollection` from all iterations.
+- ITERATOR_OF_ALL_PAYLOADS_WITHIN: Like the one above, but the execution of the loop is deferred, so you get an Iterator instead of a Collection.
 - PAYLOAD_OF_LAST_ITERATION: The value ov `nextPayload`from the last iteration.
 
 The default is `PAYLOAD_OF_LAST_ITERATION`
@@ -144,6 +145,14 @@ The following example collects the numbers 10 to 0 (inclusive):
 ```
 
 ## Release notes
+
+### 1.1.6 2023-09-21
+
+- Added streaming in while loop
+
+### 1.1.5 2023-09-19
+
+- Bugfix in AnypointView: Two function where shown in GUI which should have been private
 
 ### 1.1.4 2023-09-18
 
