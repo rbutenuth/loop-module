@@ -253,5 +253,4 @@ http://www.mulesoft.org/schema/mule/loop http://www.mulesoft.org/schema/mule/loo
 			<raise-error type="MY_NAMESPACE:MY_IDENTIFIER" description="Bumm!" />
 		</loop:while>
 	</flow>
-
 </mule>

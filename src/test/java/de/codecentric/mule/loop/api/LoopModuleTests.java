@@ -274,5 +274,4 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 			assertTrue(e.getMessage().contains("MY_NAMESPACE:MY_IDENTIFIER"));
 		}
 	}
-
 }
