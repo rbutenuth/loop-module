@@ -24,7 +24,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.1.2</version>
+	<version>1.1.6</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
