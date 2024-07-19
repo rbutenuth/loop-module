@@ -19,6 +19,7 @@ import org.mule.runtime.extension.api.exception.ModuleException;
 import org.mule.runtime.extension.api.runtime.operation.Result;
 import org.mule.runtime.extension.api.runtime.process.CompletionCallback;
 import org.mule.runtime.extension.api.runtime.route.Chain;
+import org.mule.sdk.api.annotation.param.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ public class LoopOperations {
 	private static Logger logger = LoggerFactory.getLogger(LoopOperations.class);
 
 	@SuppressWarnings("unchecked")
+	@MediaType("*/*")
 	public void repeatUntilPayloadNotEmpty(Chain operations, CompletionCallback<Object, Object> callback)
 			throws InterruptedException {
 		ArrayBlockingQueue<Boolean> queue = new ArrayBlockingQueue<>(1);
@@ -69,6 +71,7 @@ public class LoopOperations {
 	}
 
 	@Alias("while")
+	@MediaType("*/*")
 	@Throws(value = OperationErrorTypeProvider.class)
 	public void whileLoop(Chain operations, CompletionCallback<Object, Object> callback,
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "true") boolean condition, //
@@ -198,6 +201,7 @@ public class LoopOperations {
 	}
 
 	@Alias("for")
+	@MediaType("*/*")
 	public void forLoop(Chain operations, CompletionCallback<Object, Object> callback, //
 			@DisplayName("start (inclusive)") @org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "0") int start, //
 			@DisplayName("end (exclusive)") int end,
@@ -275,6 +279,7 @@ public class LoopOperations {
 	}
 
 	@Alias("for-each")
+	@MediaType("*/*")
 	public void forEachLoop(Chain operations, CompletionCallback<Object, Object> callback, //
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values,
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "false") boolean streaming)

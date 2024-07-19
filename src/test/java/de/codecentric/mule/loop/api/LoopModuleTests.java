@@ -116,7 +116,7 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 			flowRunner("loop-counter-error-in-second-iteration").run();
 			fail("should not be reached");
 		} catch (Exception e) {
-			assertEquals("counter: 1.", e.getMessage());
+			assertEquals("counter: 1", e.getMessage());
 		}
 	}
 
@@ -234,7 +234,7 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 			flowRunner("while-payload-null").run();
 			fail("should not be reached");
 		} catch (Exception e) {
-			assertEquals("Payload should be Map, but is: null.", e.getMessage());
+			assertEquals("Payload should be Map, but is: null", e.getMessage());
 		}
 	}
 
@@ -244,7 +244,7 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 			flowRunner("while-payload-array").run();
 			fail("should not be reached");
 		} catch (Exception e) {
-			assertEquals("Payload should be Map, but is: class java.util.ArrayList.", e.getMessage());
+			assertEquals("Payload should be Map, but is: class java.util.ArrayList", e.getMessage());
 		}
 	}
 

@@ -146,6 +146,11 @@ The following example collects the numbers 10 to 0 (inclusive):
 
 ## Release notes
 
+### 1.2.0 2024-07-19
+
+- Switched to Java SDK 1.6.3
+- Support to run in Mule runtime with Java 17
+
 ### 1.1.6 2023-09-21
 
 - Added streaming in while loop
