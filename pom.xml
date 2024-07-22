@@ -183,6 +183,7 @@
 			<artifactId>mule-java-module</artifactId>
 			<version>${mule-java-module-version}</version>
 			<classifier>mule-plugin</classifier>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
