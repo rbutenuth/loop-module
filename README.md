@@ -120,8 +120,8 @@ The following example iterates over the numbers 10 to 0 (inclusive). The result 
 but `nextPayload` is set to `payload - 1`):
 
 ```
+<set-payload value="#[10]" />
 <loop:while initialPayload="#[payload]" condition="true">
-    <set-payload value="#[10]" />
 	<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1 }]"/>
 </loop:while>
 ```
