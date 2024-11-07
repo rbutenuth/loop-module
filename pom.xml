@@ -19,7 +19,6 @@
 		<category>Community</category>
 		<licensePath>LICENSE.md</licensePath>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.scm.id>GitHub</project.scm.id>
 		<dependency.locations.enabled>false</dependency.locations.enabled>	
 		<cobertura-maven-plugin-version>2.7</cobertura-maven-plugin-version>
 		<maven-compiler-plugin-version>3.13.0</maven-compiler-plugin-version>
