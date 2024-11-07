@@ -138,8 +138,8 @@ The default is `PAYLOAD_OF_LAST_ITERATION`
 The following example collects the numbers 10 to 0 (inclusive):  
 
 ```
+<set-payload value="#[10]" />
 <loop:while initialPayload="#[payload]" condition="true" resultPayload="COLLECTION_OF_ALL_PAYLOADS_WITHIN">
-    <set-payload value="#[10]" />
 	<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
 </loop:while>
 ```
