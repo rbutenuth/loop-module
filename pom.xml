@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.2.1-SNAPSHOT</version>
+	<version>1.2.1-SNAPHOT</version>
 	<packaging>mule-extension</packaging>
 	<name>Loop-module Extension</name>
 
@@ -23,14 +23,16 @@
 		<dependency.locations.enabled>false</dependency.locations.enabled>	
 		<cobertura-maven-plugin-version>2.7</cobertura-maven-plugin-version>
 		<maven-compiler-plugin-version>3.13.0</maven-compiler-plugin-version>
-		<maven-javadoc-plugin-version>3.7.0</maven-javadoc-plugin-version>
-		<maven-gpg-plugin-version>3.2.4</maven-gpg-plugin-version>
+		<maven-javadoc-plugin-version>3.11.1</maven-javadoc-plugin-version>
+		<maven-gpg-plugin-version>3.2.7</maven-gpg-plugin-version>
 		<maven-source-plugin-version>3.3.1</maven-source-plugin-version>
 		<maven-release-plugin-version>3.1.1</maven-release-plugin-version>
-		<maven-site-plugin-version>3.12.1</maven-site-plugin-version>
-		<maven-project-info-reports-plugin>3.6.2</maven-project-info-reports-plugin>
+		<maven-site-plugin-version>3.21.0</maven-site-plugin-version>
+		<maven-project-info-reports-plugin>3.8.0</maven-project-info-reports-plugin>
 		<nexus-staging-maven-plugin-version>1.7.0</nexus-staging-maven-plugin-version>
 		<mule-java-module-version>1.2.13</mule-java-module-version>
+        <munit.min.mule.version>4.6.0</munit.min.mule.version>
+        <munit-extensions-maven-plugin-version>1.2.0</munit-extensions-maven-plugin-version>
 	</properties>
 
 	<developers>
@@ -105,6 +107,29 @@
 
 	<build>
 		<plugins>
+            <plugin>
+                <groupId>com.mulesoft.munit</groupId>
+                <artifactId>munit-extensions-maven-plugin</artifactId>
+                <version>${munit-extensions-maven-plugin-version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <phase>integration-test</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <runtimeConfiguration>
+                        <discoverRuntimes>
+                            <product>EE</product>
+                            <minMuleVersion>${munit.min.mule.version}</minMuleVersion>
+                            <includeSnapshots>false</includeSnapshots>
+                            <latestPatches>true</latestPatches>
+                        </discoverRuntimes>
+                    </runtimeConfiguration>
+                </configuration>
+            </plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
