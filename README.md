@@ -24,7 +24,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.2.0</version>
+	<version>1.2.1</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
@@ -34,6 +34,8 @@ The module is available on [Maven Central](https://mvnrepository.com/), so you d
 ## Repeat Until Payload Not Empty
 
 This loop executes the loop body at least once and repeats until the body returns a non empty payload. There is nothing to configure. Empty are null, empty String, empty array, and empty map.
+
+Note: Emptyness can't be checked on streamed resources, so use a payload with mime type applicatoin/java.
 
 Here an example which calls an HTTP end point with one query parameter until the GET request returns a non empty payload:
 
@@ -145,6 +147,10 @@ The following example collects the numbers 10 to 0 (inclusive):
 ```
 
 ## Release notes
+
+### 1.2.1 2024-11-07
+
+- Warn when the empty check is done on a streamed resource (which is not supported)
 
 ### 1.2.0 2024-07-19
 

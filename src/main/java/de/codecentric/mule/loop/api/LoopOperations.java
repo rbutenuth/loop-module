@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.mule.runtime.api.streaming.CursorProvider;
 import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.extension.api.annotation.error.Throws;
 import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
@@ -49,6 +50,10 @@ public class LoopOperations {
 	}
 
 	private static boolean isEmpty(Object output) {
+		if (output instanceof CursorProvider) {
+			logger.warn("isEmpty check on CursorProvider not possible, will always return false" );
+			return false;
+		}
 		if (output == null) {
 			logger.debug("output is null");
 			return true;

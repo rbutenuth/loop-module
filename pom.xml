@@ -159,7 +159,7 @@
 					<releaseProfiles>release</releaseProfiles>
 					<goals>deploy</goals>
 					<localCheckout>true</localCheckout>
-					<pushChanges>false</pushChanges>
+					<pushChanges>true</pushChanges>
 				</configuration>
 			</plugin>
 			<plugin>
