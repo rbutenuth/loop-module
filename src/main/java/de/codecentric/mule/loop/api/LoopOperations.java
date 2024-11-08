@@ -12,7 +12,11 @@ import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.mule.runtime.api.streaming.CursorProvider;
+import javax.inject.Inject;
+
+import org.mule.runtime.api.el.BindingContext;
+import org.mule.runtime.api.metadata.TypedValue;
+import org.mule.runtime.core.api.el.ExpressionManager;
 import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.extension.api.annotation.error.Throws;
 import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
@@ -26,6 +30,9 @@ import org.slf4j.LoggerFactory;
 
 public class LoopOperations {
 	private static Logger logger = LoggerFactory.getLogger(LoopOperations.class);
+
+	@Inject
+	private ExpressionManager expressionManager;
 
 	@SuppressWarnings("unchecked")
 	@MediaType("*/*")
@@ -49,30 +56,38 @@ public class LoopOperations {
 		} while (continueLoop);
 	}
 
-	private static boolean isEmpty(Object output) {
-		if (output instanceof CursorProvider) {
-			logger.warn("isEmpty check on CursorProvider not possible, will always return false" );
-			return false;
-		}
+	@SuppressWarnings("unchecked")
+	private boolean isEmpty(Object output) {
+		// Handle the easy cases (null, String, Collection, Map) directly,
+		// other cases are handled by an expression evaluator in DataWeave.
+		// This way even complicated values, which arrive as streaming cursor provider,
+		// can be handled correctly.
+		boolean result;
 		if (output == null) {
 			logger.debug("output is null");
-			return true;
+			result = true;
+		} else if (output instanceof String) {
+			result = ((String) output).trim().isEmpty();
+		} else if (output instanceof Collection) {
+			result = ((Collection<?>) output).isEmpty();
+		} else if (output instanceof Map) {
+			result = ((Map<?, ?>) output).isEmpty();
+		} else {
+			if (logger.isDebugEnabled()) {
+				logger.debug("try with DataWeave isEmpty()");
+				BindingContext context = BindingContext.builder().addBinding("value", TypedValue.of(output))
+						.build();
+				TypedValue<?> expressionResult = expressionManager.evaluate("value as String", context);
+				logger.debug("evaluate isEmpty({})", expressionResult.getValue());
+			}
+			BindingContext context = BindingContext.builder().addBinding("value", TypedValue.of(output))
+					.build();
+			TypedValue<?> expressionResult = expressionManager.evaluate("isEmpty(value)", context);
+			result = ((TypedValue<Boolean>) expressionResult).getValue();
 		}
-		if (output instanceof String && ((String) output).trim().isEmpty()) {
-			logger.debug("output empty string");
-			return true;
-		}
-		if (output instanceof Collection && ((Collection<?>) output).isEmpty()) {
-			logger.debug("output is empty collection");
-			return true;
-		}
-		if (output instanceof Map && ((Map<?, ?>) output).isEmpty()) {
-			logger.debug("output is empty map");
-			return true;
-		}
-		logger.debug("output is not empty");
-
-		return false;
+		logger.debug("isEmpty(...): {}", result);
+		
+		return result;
 	}
 
 	@Alias("while")
@@ -90,7 +105,8 @@ public class LoopOperations {
 		}
 	}
 
-	private void whileLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, boolean condition, Object initialPayload, PayloadAfterLoop resultPayload) throws InterruptedException {
+	private void whileLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, boolean condition,
+			Object initialPayload, PayloadAfterLoop resultPayload) throws InterruptedException {
 		ArrayBlockingQueue<WhileQueueEntry> queue = new ArrayBlockingQueue<>(1);
 		List<Object> resultCollection = resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN ? new ArrayList<>() : null;
 		boolean firstIteration = true;
@@ -100,7 +116,8 @@ public class LoopOperations {
 			Object nextPayload = firstIteration ? initialPayload : entry.payload;
 			operations.process(nextPayload, Collections.EMPTY_MAP, result -> {
 				Map<String, Object> payload = payloadAsMap(result);
-				queue.offer(new WhileQueueEntry(evaluateCondition(payload.get("condition")), payload.get("nextPayload"), payload.get("addToCollection")));
+				queue.offer(new WhileQueueEntry(evaluateCondition(payload.get("condition")), payload.get("nextPayload"),
+						payload.get("addToCollection")));
 			}, (error, previous) -> {
 				callback.error(error);
 				// Make sure while() does not hang in case of error
@@ -122,8 +139,9 @@ public class LoopOperations {
 			}
 		}
 	}
-	
-	private void whileLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, boolean condition, Object initialPayload) throws InterruptedException {
+
+	private void whileLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, boolean condition,
+			Object initialPayload) throws InterruptedException {
 		Iterator<Object> result = new Iterator<Object>() {
 			boolean firstIteration = true;
 			WhileQueueEntry entry = new WhileQueueEntry(condition, initialPayload, null);
@@ -139,7 +157,8 @@ public class LoopOperations {
 				ArrayBlockingQueue<WhileQueueEntry> queue = new ArrayBlockingQueue<>(1);
 				operations.process(nextPayload, Collections.EMPTY_MAP, result -> {
 					Map<String, Object> payload = payloadAsMap(result);
-					queue.offer(new WhileQueueEntry(evaluateCondition(payload.get("condition")), payload.get("nextPayload"), payload.get("addToCollection")));
+					queue.offer(new WhileQueueEntry(evaluateCondition(payload.get("condition")),
+							payload.get("nextPayload"), payload.get("addToCollection")));
 				}, (error, previous) -> {
 					queue.offer(new WhileQueueEntry(error));
 				});
@@ -157,7 +176,7 @@ public class LoopOperations {
 		};
 		callback.success(Result.<Object, Object>builder().output(result).build());
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> payloadAsMap(Result<?, ?> result) {
 		Object rawPayload = result.getOutput();
@@ -181,7 +200,7 @@ public class LoopOperations {
 			this.payload = payload;
 			this.addToCollection = addToCollection;
 		}
-		
+
 		public WhileQueueEntry(Throwable error) {
 			this.condition = false;
 			this.error = error;
@@ -195,7 +214,7 @@ public class LoopOperations {
 	 * @return <code>null</code>: false, {@link Boolean}: value, otherwise:
 	 *         !{@link #isEmpty(Object)}
 	 */
-	static boolean evaluateCondition(Object condition) {
+	boolean evaluateCondition(Object condition) {
 		if (condition == null) {
 			return false;
 		} else if (condition instanceof Boolean) {
@@ -296,7 +315,8 @@ public class LoopOperations {
 		}
 	}
 
-	private void forEachLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, Collection<Object> values) throws InterruptedException {
+	private void forEachLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback,
+			Collection<Object> values) throws InterruptedException {
 		AtomicBoolean errorOccured = new AtomicBoolean(false);
 		Collection<Object> resultCollection = new ArrayList<>(values.size());
 		ArrayBlockingQueue<Optional<Object>> queue = new ArrayBlockingQueue<>(1);
@@ -319,7 +339,8 @@ public class LoopOperations {
 		}
 	}
 
-	private void forEachLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, Collection<Object> values) {
+	private void forEachLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback,
+			Collection<Object> values) {
 		Iterator<Object> inputIterator = values.iterator();
 		Iterator<Object> result = new Iterator<Object>() {
 
@@ -351,11 +372,11 @@ public class LoopOperations {
 		};
 		callback.success(Result.<Object, Object>builder().output(result).build());
 	}
-	
+
 	private static class ForQueueEntry {
 		private final Object value;
 		private final Throwable error;
-		
+
 		public ForQueueEntry(Object value) {
 			this.value = value;
 			error = null;

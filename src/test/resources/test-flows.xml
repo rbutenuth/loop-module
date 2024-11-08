@@ -13,8 +13,9 @@ http://www.mulesoft.org/schema/mule/loop http://www.mulesoft.org/schema/mule/loo
 
 	<flow name="payload-immediately-not-empty">
 		<loop:repeat-until-payload-not-empty>
-			<set-payload value="foo"/>
+			<set-payload value='#[output application/json --- "foo"]'/>
 		</loop:repeat-until-payload-not-empty>
+		<set-payload value='#[output application/java --- payload as String]'/>
 	</flow>
 
 	<flow name="repeat-1000-iterations">
