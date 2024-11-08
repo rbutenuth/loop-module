@@ -24,7 +24,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.2.1</version>
+	<version>1.2.2</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
@@ -147,6 +147,10 @@ The following example collects the numbers 10 to 0 (inclusive):
 ```
 
 ## Release notes
+
+### 1.2.2 2024-11-08
+
+- Empty check of repeat-until-payload-not-empty can now handle streamed payloads.
 
 ### 1.2.1 2024-11-07
 
