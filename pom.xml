@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.2.2</version>
+	<version>1.2.3-SNAPSHOT</version>
 	<packaging>mule-extension</packaging>
 	<name>Loop-module Extension</name>
 
@@ -53,7 +53,7 @@
 	<scm>
 		<connection>scm:git:git@github.com:rbutenuth/loop-module.git</connection>
 		<developerConnection>scm:git:git@github.com:rbutenuth/loop-module.git</developerConnection>
-		<tag>loop-module-1.2.2</tag>
+		<tag>loop-module-1.2.1</tag>
 	</scm>
 
 	<distributionManagement>
