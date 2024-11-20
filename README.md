@@ -35,8 +35,6 @@ The module is available on [Maven Central](https://mvnrepository.com/), so you d
 
 This loop executes the loop body at least once and repeats until the body returns a non empty payload. There is nothing to configure. Empty are null, empty String, empty array, and empty map.
 
-Note: Emptyness can't be checked on streamed resources, so use a payload with mime type applicatoin/java.
-
 Here an example which calls an HTTP end point with one query parameter until the GET request returns a non empty payload:
 
 ```
