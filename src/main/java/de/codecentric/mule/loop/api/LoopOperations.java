@@ -42,11 +42,11 @@ public class LoopOperations {
 		boolean continueLoop;
 		do {
 			operations.process(result -> {
-				if (!isEmpty(result.getOutput())) {
+				if (isEmpty(result.getOutput())) {
+					queue.offer(Boolean.TRUE);
+				} else {
 					queue.offer(Boolean.FALSE);
 					callback.success(result);
-				} else {
-					queue.offer(Boolean.TRUE);
 				}
 			}, (error, previous) -> {
 				callback.error(error);
