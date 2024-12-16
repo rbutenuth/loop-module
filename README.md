@@ -58,7 +58,7 @@ just before `end`. Thus `start` is included, `end` is excluded. You can choose i
 set to the counter (as integer) or if the payload from the flow is passed to the loop body. 
 
 When the payload is passed into the body, the payload at the end of one iteration is the payload for
-the next iteration. So you can use it to collect data within the loop.
+the next iteration.
 
 ### Payload Is Set To Counter
 
