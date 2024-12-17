@@ -155,6 +155,17 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 	}
 
 	@Test
+	public void forEachWithBadType() throws Exception {
+		
+		try {
+			flowRunner("for-each").withPayload("string instead of collection").run();
+			fail("should not be reached");
+		} catch (Exception e) {
+			assertEquals("Can't loop over java.lang.String, only Collection or Iterator are valid options", e.getMessage());
+		}
+	}
+
+	@Test
 	public void forEachWithError() throws Exception {
 		Collection<Integer> values = new ArrayList<>(100);
 		for (int i = 0; i < 100; i++) {
@@ -174,7 +185,7 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 		for (int i = 0; i < 100; i++) {
 			values.add(i);
 		}
-		Event event = flowRunner("for-each-streaming").withPayload(values).run();
+		Event event = flowRunner("for-each-streaming").withPayload(values.iterator()).run();
 		@SuppressWarnings("unchecked")
 		Iterator<Integer> payload = (Iterator<Integer>) event.getMessage().getPayload().getValue();
 		for (int i = 0; i < 100; i++) {
@@ -190,7 +201,7 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 		for (int i = 0; i < 100; i++) {
 			values.add(i);
 		}
-		Event event = flowRunner("for-each-streaming-with-error").withPayload(values).run();
+		Event event = flowRunner("for-each-streaming-with-error").withPayload(values.iterator()).run();
 		@SuppressWarnings("unchecked")
 		Iterator<Integer> payload = (Iterator<Integer>) event.getMessage().getPayload().getValue();
 		assertTrue(payload.hasNext());

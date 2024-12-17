@@ -15,6 +15,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 
 import org.mule.runtime.api.el.BindingContext;
+import org.mule.runtime.api.exception.MuleRuntimeException;
+import org.mule.runtime.api.i18n.I18nMessageFactory;
 import org.mule.runtime.api.metadata.TypedValue;
 import org.mule.runtime.core.api.el.ExpressionManager;
 import org.mule.runtime.extension.api.annotation.Alias;
@@ -302,26 +304,39 @@ public class LoopOperations {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Alias("for-each")
 	@MediaType("*/*")
 	public void forEachLoop(Chain operations, CompletionCallback<Object, Object> callback, //
-			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Collection<Object> values,
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Object values,
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "false") boolean streaming)
 			throws InterruptedException {
-		if (streaming) {
-			forEachLoopStreaming(operations, callback, values);
+		Iterator<Object> valueIterator;
+		if (values instanceof Collection) {
+			valueIterator= ((Collection<Object>)values).iterator();
+		} else if (values instanceof Iterator) {
+			valueIterator = (Iterator<Object>) values;
 		} else {
-			forEachLoopInMemory(operations, callback, values);
+			String type = values == null ? "<null>" : values.getClass().getName();
+			throw new MuleRuntimeException(I18nMessageFactory.createStaticMessage(
+					"Can't loop over " + type + ", only Collection or Iterator are valid options"));
+		}
+		
+		if (streaming) {
+			forEachLoopStreaming(operations, callback, valueIterator);
+		} else {
+			forEachLoopInMemory(operations, callback, valueIterator);
 		}
 	}
 
 	private void forEachLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback,
-			Collection<Object> values) throws InterruptedException {
+			Iterator<Object> values) throws InterruptedException {
 		AtomicBoolean errorOccured = new AtomicBoolean(false);
-		Collection<Object> resultCollection = new ArrayList<>(values.size());
+		Collection<Object> resultCollection = new ArrayList<>();
 		ArrayBlockingQueue<Optional<Object>> queue = new ArrayBlockingQueue<>(1);
 
-		for (Object value : values) {
+		while (values.hasNext()) {
+			Object value = values.next();
 			if (errorOccured.get()) {
 				break;
 			}
@@ -340,18 +355,17 @@ public class LoopOperations {
 	}
 
 	private void forEachLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback,
-			Collection<Object> values) {
-		Iterator<Object> inputIterator = values.iterator();
+			Iterator<Object> values) {
 		Iterator<Object> result = new Iterator<Object>() {
 
 			@Override
 			public boolean hasNext() {
-				return inputIterator.hasNext();
+				return values.hasNext();
 			}
 
 			@Override
 			public Object next() {
-				Object value = inputIterator.next();
+				Object value = values.next();
 				ArrayBlockingQueue<ForQueueEntry> queue = new ArrayBlockingQueue<>(1);
 				operations.process(value, Collections.EMPTY_MAP, result -> {
 					queue.offer(new ForQueueEntry(result.getOutput()));

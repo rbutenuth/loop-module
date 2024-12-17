@@ -24,7 +24,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.2.2</version>
+	<version>1.2.3</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
@@ -145,6 +145,10 @@ The following example collects the numbers 10 to 0 (inclusive):
 ```
 
 ## Release notes
+
+### 1.2.3 2024-12-17
+
+- Allow streaming with Iterator as input of for-each loop.
 
 ### 1.2.2 2024-11-08
 
