@@ -2,7 +2,6 @@ package de.codecentric.mule.loop.api;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 /**
  * A wrapper around an {@link Iterator}. All elements - except the last one - are returned.
@@ -11,25 +10,29 @@ import java.util.Optional;
  */
 public class RemoveLastIterator<E> implements Iterator<E> {
 	private Iterator<E> inner;
-	private Optional<E> nextValue;
+	private boolean haveFetched;
+	private boolean haveNextValue;
+	private E nextValue;
 
 	public RemoveLastIterator(Iterator<E> inner) {
 		this.inner = inner;
-		// fetch lazy on first call of hasNext() or next(), so nextValue is still null.
+		haveFetched = false;
+		haveNextValue = false;
 	}
 	
 	@Override
 	public boolean hasNext() {
-		if (nextValue == null) {
+		if (!haveFetched) {
 			fetch();
+			haveFetched = true;
 		}
-		return nextValue.isPresent() && inner.hasNext();
+		return haveNextValue && inner.hasNext();
 	}
 
 	@Override
 	public E next() {
 		if (hasNext()) {
-			E result = nextValue.get();
+			E result = nextValue;
 			fetch();
 			return result;
 		} else {
@@ -39,9 +42,11 @@ public class RemoveLastIterator<E> implements Iterator<E> {
 
 	private void fetch() {
 		if (inner.hasNext()) {
-			nextValue = Optional.of(inner.next());
+			haveNextValue = true;
+			nextValue = inner.next();
 		} else {
-			nextValue = Optional.empty();
+			haveNextValue = false;
+			nextValue = null;
 		}
 	}
 }

@@ -151,6 +151,10 @@ The following example collects the numbers 10 to 0 (inclusive):
 
 ## Release notes
 
+### 1.2.5 2025-05-14
+
+- Allow null payload combined with skip last element.
+
 ### 1.2.4 2025-05-14
 
 - Added option to skip last element when collecting in a while loop.
