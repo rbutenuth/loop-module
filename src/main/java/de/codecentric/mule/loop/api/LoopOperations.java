@@ -98,17 +98,18 @@ public class LoopOperations {
 	public void whileLoop(Chain operations, CompletionCallback<Object, Object> callback,
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "true") boolean condition, //
 			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "#[payload]") Object initialPayload, //
-			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "PAYLOAD_OF_LAST_ITERATION") PayloadAfterLoop resultPayload)
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "PAYLOAD_OF_LAST_ITERATION") PayloadAfterLoop resultPayload, //
+			@org.mule.runtime.extension.api.annotation.param.Optional(defaultValue = "false") boolean skipLastElement)
 			throws InterruptedException {
 		if (resultPayload == PayloadAfterLoop.ITERATOR_OF_ALL_PAYLOADS_WITHIN) {
-			whileLoopStreaming(operations, callback, condition, initialPayload);
+			whileLoopStreaming(operations, callback, condition, initialPayload, skipLastElement);
 		} else {
-			whileLoopInMemory(operations, callback, condition, initialPayload, resultPayload);
+			whileLoopInMemory(operations, callback, condition, initialPayload, resultPayload, skipLastElement);
 		}
 	}
 
 	private void whileLoopInMemory(Chain operations, CompletionCallback<Object, Object> callback, boolean condition,
-			Object initialPayload, PayloadAfterLoop resultPayload) throws InterruptedException {
+			Object initialPayload, PayloadAfterLoop resultPayload, boolean skipLastElement) throws InterruptedException {
 		ArrayBlockingQueue<WhileQueueEntry> queue = new ArrayBlockingQueue<>(1);
 		List<Object> resultCollection = resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN ? new ArrayList<>() : null;
 		boolean firstIteration = true;
@@ -127,7 +128,9 @@ public class LoopOperations {
 			});
 			entry = queue.take();
 			if (resultPayload == COLLECTION_OF_ALL_PAYLOADS_WITHIN) {
-				resultCollection.add(entry.addToCollection);
+				if (skipLastElement == false || entry.condition) {
+					resultCollection.add(entry.addToCollection);
+				}
 			}
 			firstIteration = false;
 		}
@@ -143,7 +146,7 @@ public class LoopOperations {
 	}
 
 	private void whileLoopStreaming(Chain operations, CompletionCallback<Object, Object> callback, boolean condition,
-			Object initialPayload) throws InterruptedException {
+			Object initialPayload, boolean skipLastElement) throws InterruptedException {
 		Iterator<Object> result = new Iterator<Object>() {
 			boolean firstIteration = true;
 			WhileQueueEntry entry = new WhileQueueEntry(condition, initialPayload, null);
@@ -176,6 +179,9 @@ public class LoopOperations {
 				}
 			}
 		};
+		if (skipLastElement) {
+			result = new RemoveLastIterator<Object>(result);
+		}
 		callback.success(Result.<Object, Object>builder().output(result).build());
 	}
 

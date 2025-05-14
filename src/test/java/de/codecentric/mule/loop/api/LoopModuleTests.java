@@ -233,6 +233,17 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 	}
 
 	@Test
+	public void whileCountDownAndCollectSkipLasst() throws Exception {
+		Event event = flowRunner("while-countdown-and-collect-skip-last").run();
+		@SuppressWarnings("unchecked")
+		List<Integer> payload = (List<Integer>) event.getMessage().getPayload().getValue();
+		assertEquals(10, payload.size());
+		for (int i = 0; i < 10; i++) {
+			assertEquals(Integer.valueOf(10 - i), payload.get(i));
+		}
+	}
+
+	@Test
 	public void whileCountDownPayloadBefore() throws Exception {
 		Event event = flowRunner("while-countdown-payload-before").run();
 		Integer payload = (Integer) event.getMessage().getPayload().getValue();
@@ -265,6 +276,18 @@ public class LoopModuleTests extends MuleArtifactFunctionalTestCase {
 		@SuppressWarnings("unchecked")
 		Iterator<Integer> payload = (Iterator<Integer>) event.getMessage().getPayload().getValue();
 		for (int i = 0; i < 11; i++) {
+			assertTrue(payload.hasNext());
+			assertEquals(Integer.valueOf(10 - i), payload.next());
+		}
+		assertFalse(payload.hasNext());
+	}
+
+	@Test
+	public void whileCountDownAndIterateSkipLast() throws Exception {
+		Event event = flowRunner("while-countdown-and-iterate-skip-last").run();
+		@SuppressWarnings("unchecked")
+		Iterator<Integer> payload = (Iterator<Integer>) event.getMessage().getPayload().getValue();
+		for (int i = 0; i < 10; i++) {
 			assertTrue(payload.hasNext());
 			assertEquals(Integer.valueOf(10 - i), payload.next());
 		}

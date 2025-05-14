@@ -220,6 +220,13 @@ http://www.mulesoft.org/schema/mule/loop http://www.mulesoft.org/schema/mule/loo
 		</loop:while>
 	</flow>
 
+	<flow name="while-countdown-and-collect-skip-last" >
+		<set-payload value="#[10]" />
+		<loop:while initialPayload="#[payload]" resultPayload="COLLECTION_OF_ALL_PAYLOADS_WITHIN" skipLastElement="true">
+			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
+		</loop:while>
+	</flow>
+
 	<flow name="while-payload-null" >
 		<set-payload value="#[10]" />
 		<loop:while initialPayload="#[payload]" resultPayload="COLLECTION_OF_ALL_PAYLOADS_WITHIN">
@@ -244,6 +251,13 @@ http://www.mulesoft.org/schema/mule/loop http://www.mulesoft.org/schema/mule/loo
 	<flow name="while-countdown-and-iterate" >
 		<set-payload value="#[10]" />
 		<loop:while initialPayload="#[payload]" resultPayload="ITERATOR_OF_ALL_PAYLOADS_WITHIN">
+			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
+		</loop:while>
+	</flow>
+
+	<flow name="while-countdown-and-iterate-skip-last" >
+		<set-payload value="#[10]" />
+		<loop:while initialPayload="#[payload]" resultPayload="ITERATOR_OF_ALL_PAYLOADS_WITHIN" skipLastElement="true">
 			<set-payload value="#[%dw 2.0&#10;output application/java&#10;---&#10;{	condition: payload &gt; 0,	nextPayload: payload - 1, addToCollection: payload }]"/>
 		</loop:while>
 	</flow>

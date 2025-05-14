@@ -24,7 +24,7 @@ Add this dependency to your application pom.xml (check for newer version):
 <dependency>
 	<groupId>de.codecentric.mule.modules</groupId>
 	<artifactId>loop-module</artifactId>
-	<version>1.2.3</version>
+	<version>1.2.4</version>
 	<classifier>mule-plugin</classifier>
 </dependency>
 ```
@@ -135,6 +135,11 @@ The parameter `collectResults` controls the value of the payload after the loop.
 
 The default is `PAYLOAD_OF_LAST_ITERATION`
 
+The optional parameter `skipLastElement` (default is `false`) allows you to skip the collection the last payload presented
+in `addToCollection`. This is usefull when you call another system until it returns with the answer "I have no more data".
+In this case you have no meaningfull payload to return. The parameter `skipLastElement` is ignored then you use the mode
+`PAYLOAD_OF_LAST_ITERATION` or `PAYLOAD_BEFORE_LOOP`, as it makes no sense in these cases.
+
 The following example collects the numbers 10 to 0 (inclusive):  
 
 ```
@@ -145,6 +150,11 @@ The following example collects the numbers 10 to 0 (inclusive):
 ```
 
 ## Release notes
+
+### 1.2.4 2025-05-14
+
+- Added option to skip last element when collecting in a while loop.
+- Update of Mule module parent from 1.6.3 to 1.6.13.
 
 ### 1.2.3 2024-12-17
 
